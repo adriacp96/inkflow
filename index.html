@@ -54,13 +54,21 @@
     .card-item { border-bottom: 1px solid #000; padding: 10px 0; }
 
     table { width: 100%; border-collapse: collapse; }
-    th { font-size: 0.75rem; border-bottom: 1px solid #000; }
-    td { padding: 6px 0; border-bottom: 1px dotted #000; }
+    th { font-size: 0.75rem; border-bottom: 1px solid #000; text-transform: uppercase; }
+    td { padding: 8px 0; border-bottom: 1px dotted #000; vertical-align: top; }
     .right { text-align: right; }
-
     .status-msg { font-size: 0.8rem; font-style: italic; }
 
     .mini { font-size: 0.8rem; opacity: 0.9; }
+    .muted { opacity: 0.8; font-size: 0.85rem; }
+    .pill {
+      display: inline-block;
+      border: 1px solid #000;
+      padding: 2px 6px;
+      font-size: 0.75rem;
+      margin-right: 6px;
+    }
+    .row-ok { opacity: 0.65; text-decoration: line-through; }
   </style>
 </head>
 <body>
@@ -91,6 +99,22 @@
 </div>
 
 <div class="section">
+  <h2>Calendario de pagos del mes</h2>
+  <div class="muted">Configura fechas abajo. Marca como pagado por mes (se guarda en tu navegador).</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:90px;">Fecha</th>
+        <th>Concepto</th>
+        <th class="right" style="width:140px;">Importe</th>
+        <th style="width:90px;" class="right">Pagado</th>
+      </tr>
+    </thead>
+    <tbody id="payTableBody"></tbody>
+  </table>
+</div>
+
+<div class="section">
   <h2>Resumen de Gastos</h2>
   <div id="chartsContainer"><p style="font-size:0.8rem">Cargando…</p></div>
 </div>
@@ -100,6 +124,12 @@
   <div id="cardsForm"></div>
   <button id="syncNow">GUARDAR Y SINCRONIZAR</button>
   <button class="alt" id="resetCards">LIMPIAR DATOS</button>
+</div>
+
+<div class="section">
+  <h2>Fechas de cobro</h2>
+  <div class="muted">Mensuales: día del mes. No mensuales: próxima fecha (el sistema calcula las siguientes).</div>
+  <div id="scheduleForm"></div>
 </div>
 
 <div class="section">
@@ -121,35 +151,43 @@ const SUPABASE_URL = "https://wogqftmhwgosoaldwees.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvZ3FmdG1od2dvc29hbGR3ZWVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1ODE2MjUsImV4cCI6MjA4NTE1NzYyNX0.lJw1YPSOiV-RJBrhX7aNpJiwUwGjes6cNxTfg5CEg38";
 const PIN_KEY = "fin_pin_v1";
 
-/* ================= DATOS ================= */
+const SCHED_KEY = "fin_schedule_v1";          // config de fechas
+const PAID_KEY_PREFIX = "fin_paid_v1_";       // pagados por mes: fin_paid_v1_YYYY-MM
+
+/* ================= DATOS =================
+  schedule:
+    - { type:"monthly", day: 1..31 }
+    - { type:"every_n_months", months: N, next:"YYYY-MM-DD" }
+    - { type:"every_n_years", years: N, next:"YYYY-MM-DD" }
+*/
 const FIXED = [
-  { concept:"Apple One", freq:"Mensual", amount:97.95, currency:"AED" },
-  { concept:"Netflix", freq:"Mensual", amount:9.99, currency:"EUR" },
-  { concept:"Real Debrid", freq:"Semestral", amount:16, currency:"EUR" },
-  { concept:"Formula 1", freq:"Anual", amount:3649, currency:"IDR" },
-  { concept:"YouTube Premium", freq:"Mensual", amount:195, currency:"IDR" },
-  { concept:"Du", freq:"Mensual", amount:252, currency:"AED" },
-  { concept:"Virgin", freq:"Anual", amount:1575, currency:"AED" },
-  { concept:"Emirates Islamic", freq:"Mensual", amount:1739, currency:"AED" },
-  { concept:"Emirates NBD", freq:"Mensual", amount:3346, currency:"AED" },
-  { concept:"Seguro coche", freq:"Anual", amount:3003, currency:"AED" },
-  { concept:"Carné conducir", freq:"Trienal", amount:320, currency:"AED" }
+  // Suscripciones
+  { id:"apple_one", category:"Suscripciones", concept:"Apple One", amount:97.95, currency:"AED", schedule:{ type:"monthly", day:26 } },
+  { id:"netflix", category:"Suscripciones", concept:"Netflix", amount:9.99, currency:"EUR", notes:"AMEX (España)", schedule:{ type:"monthly", day:28 } },
+  { id:"real_debrid", category:"Suscripciones", concept:"Real Debrid", amount:16, currency:"EUR", schedule:{ type:"every_n_months", months:6, next:"2026-07-06" } },
+  { id:"f1", category:"Suscripciones", concept:"Formula 1", amount:3649, currency:"IDR", notes:"App Store India", schedule:{ type:"every_n_years", years:1, next:"2026-10-26" } },
+  { id:"yt_premium", category:"Suscripciones", concept:"YouTube Premium", amount:195, currency:"IDR", notes:"App Store India", schedule:{ type:"monthly", day:28 } },
+
+  // Telefonía
+  { id:"du", category:"Telefonía", concept:"Du", amount:252, currency:"AED", schedule:{ type:"monthly", day:24 } },
+  { id:"virgin", category:"Telefonía", concept:"Virgin", amount:1575, currency:"AED", schedule:{ type:"every_n_years", years:1, next:"2026-02-17" } },
+
+  // Préstamos
+  { id:"loan_ei", category:"Préstamos", concept:"Emirates Islamic", amount:1739, currency:"AED", schedule:{ type:"monthly", day:27 } },
+  { id:"loan_enbd", category:"Préstamos", concept:"Emirates NBD", amount:3346, currency:"AED", notes:"24/02/26 cuota 19/36", schedule:{ type:"monthly", day:24 } },
+
+  // Seguros y carnés
+  { id:"car_insurance", category:"Seguros y carnés", concept:"Seguro coche", amount:3003, currency:"AED", schedule:{ type:"every_n_years", years:1, next:"2026-08-29" } },
+  { id:"drivers_license", category:"Seguros y carnés", concept:"Carné de conducir", amount:320, currency:"AED", schedule:{ type:"every_n_years", years:3, next:"2031-01-29" } }
 ];
 
 const CARDS = [
-  { name:"Emirates NBD", currency:"AED" },
-  { name:"Tabby", currency:"AED" },
-  { name:"Amex", currency:"EUR" }
+  { id:"card_enbd", name:"Emirates NBD", currency:"AED", defaultDueDay:26 },
+  { id:"card_tabby", name:"Tabby", currency:"AED", defaultDueDay:10 },
+  { id:"card_amex", name:"Amex", currency:"EUR", defaultDueDay:28 } // cámbialo si no es 28
 ];
 
 /* ================= UTIL ================= */
-function monthlyReal(f){
-  if(f.freq==="Mensual") return f.amount;
-  if(f.freq==="Anual") return f.amount/12;
-  if(f.freq==="Semestral") return f.amount/6;
-  if(f.freq==="Trienal") return f.amount/36;
-  return 0;
-}
 function setStatus(t){ document.getElementById("status").textContent = t; }
 
 function ensurePin(){
@@ -163,11 +201,30 @@ function currentMonthISO(){
   const y = document.getElementById("yearSelect").value;
   return `${y}-${m}`;
 }
+function monthStartDate(ym){
+  const [y,m] = ym.split("-").map(Number);
+  return new Date(y, m-1, 1);
+}
+function ymd(d){
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+function prettyDate(d){
+  const dd = String(d.getDate()).padStart(2,"0");
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const yy = String(d.getFullYear()).slice(-2);
+  return `${dd}/${mm}/${yy}`;
+}
+function clampDay(y, mIndex, day){
+  const last = new Date(y, mIndex+1, 0).getDate();
+  return Math.min(Math.max(1, day), last);
+}
 
 function functionUrl(){
   return `${SUPABASE_URL}/functions/v1/finanzas`;
 }
-
 async function apiCall(action, month, data=null){
   const pin = ensurePin();
   const res = await fetch(functionUrl(),{
@@ -184,14 +241,103 @@ async function apiCall(action, month, data=null){
   return j;
 }
 
-/* ================= RENDER ================= */
+/* ================= PRORRATEO (solo tabla) ================= */
+function monthlyReal(f){
+  const s = f.schedule;
+  // ojo: aquí prorrateo por "periodicidad", no por fecha exacta
+  if(s.type==="monthly") return f.amount;
+  if(s.type==="every_n_months") return f.amount / s.months;
+  if(s.type==="every_n_years") return f.amount / (12 * s.years);
+  return 0;
+}
+
+/* ================= STORAGE (fechas + pagados) ================= */
+function loadScheduleOverrides(){
+  try { return JSON.parse(localStorage.getItem(SCHED_KEY)||"{}"); }
+  catch { return {}; }
+}
+function saveScheduleOverrides(obj){
+  localStorage.setItem(SCHED_KEY, JSON.stringify(obj));
+}
+function getPaidKey(ym){ return PAID_KEY_PREFIX + ym; }
+function loadPaidMap(ym){
+  try { return JSON.parse(localStorage.getItem(getPaidKey(ym))||"{}"); }
+  catch { return {}; }
+}
+function savePaidMap(ym, obj){
+  localStorage.setItem(getPaidKey(ym), JSON.stringify(obj));
+}
+
+/* ================= SCHEDULE ENGINE ================= */
+function applyOverridesToFixed(){
+  const ov = loadScheduleOverrides();
+  return FIXED.map(x=>{
+    const o = ov?.fixed?.[x.id];
+    if(!o) return x;
+    return {
+      ...x,
+      schedule: { ...x.schedule, ...o.schedule },
+      notes: (o.notes ?? x.notes)
+    };
+  });
+}
+function getCardDueDay(cardId){
+  const ov = loadScheduleOverrides();
+  const o = ov?.cards?.[cardId];
+  const base = CARDS.find(c=>c.id===cardId)?.defaultDueDay || 1;
+  const d = Number(o?.dueDay ?? base);
+  return Math.min(Math.max(1,d),31);
+}
+function setCardDueDay(cardId, day){
+  const ov = loadScheduleOverrides();
+  ov.cards = ov.cards || {};
+  ov.cards[cardId] = ov.cards[cardId] || {};
+  ov.cards[cardId].dueDay = Number(day)||1;
+  saveScheduleOverrides(ov);
+}
+
+function occursInMonth(schedule, ym){
+  const [Y,M] = ym.split("-").map(Number);
+  const mIndex = M-1;
+
+  if(schedule.type==="monthly"){
+    const day = clampDay(Y, mIndex, Number(schedule.day)||1);
+    return { occurs:true, date: new Date(Y, mIndex, day) };
+  }
+
+  const next = new Date(schedule.next + "T00:00:00");
+  if(isNaN(next)) return { occurs:false, date:null };
+
+  // Avanza next hasta >= inicio del mes
+  let d = new Date(next.getTime());
+  const start = new Date(Y, mIndex, 1);
+  const end = new Date(Y, mIndex+1, 0, 23,59,59);
+
+  const guard = 5000; // evitar bucles locos
+  let i=0;
+
+  while(d < start && i++ < guard){
+    if(schedule.type==="every_n_months"){
+      d.setMonth(d.getMonth() + (Number(schedule.months)||1));
+    } else if(schedule.type==="every_n_years"){
+      d.setFullYear(d.getFullYear() + (Number(schedule.years)||1));
+    } else break;
+  }
+
+  if(d >= start && d <= end){
+    return { occurs:true, date:d };
+  }
+  return { occurs:false, date:null };
+}
+
+/* ================= RENDER: CARDS ================= */
 function renderCards(cards){
   const w = document.getElementById("cardsForm");
   w.innerHTML="";
 
   CARDS.forEach(c=>{
     const total = (cards?.[c.name]?.amount ?? "");
-    const minPay = (cards?.[c.name]?.min_payment ?? ""); // NUEVO
+    const minPay = (cards?.[c.name]?.min_payment ?? "");
     const paid = !!cards?.[c.name]?.paid;
 
     w.innerHTML+=`
@@ -223,26 +369,46 @@ function renderCards(cards){
   });
 }
 
+function collectCards(){
+  const o={};
+  document.querySelectorAll("input[data-card-total]").forEach(i=>{
+    const name = i.dataset.cardTotal;
+    o[name] = o[name] || {};
+    o[name].amount = Number(i.value) || 0;
+  });
+  document.querySelectorAll("input[data-card-min]").forEach(i=>{
+    const name = i.dataset.cardMin;
+    o[name] = o[name] || {};
+    o[name].min_payment = Number(i.value) || 0;
+  });
+  document.querySelectorAll("select[data-paid]").forEach(s=>{
+    const name = s.dataset.paid;
+    o[name] = o[name] || {};
+    o[name].paid = (s.value === "si");
+  });
+  return o;
+}
+
+/* ================= RENDER: CHARTS ================= */
 function renderCharts(cards){
   const c=document.getElementById("chartsContainer");
   c.innerHTML="";
 
-  // Dos barras por moneda:
-  // - TOTAL (fijos + deuda total tarjetas)
-  // - A PAGAR (fijos + mínimo tarjetas)
+  const fixed = applyOverridesToFixed();
+
   ["AED","EUR","IDR"].forEach(cur=>{
-    let fixed=0; FIXED.filter(x=>x.currency===cur).forEach(x=>fixed+=monthlyReal(x));
+    let fixedSum=0;
+    fixed.filter(x=>x.currency===cur).forEach(x=>fixedSum+=monthlyReal(x));
 
     let cardTotal=0;
     let cardMin=0;
-
     CARDS.filter(x=>x.currency===cur).forEach(x=>{
       cardTotal += Number(cards?.[x.name]?.amount || 0);
       cardMin   += Number(cards?.[x.name]?.min_payment || 0);
     });
 
-    const total = fixed + cardTotal;
-    const pay   = fixed + cardMin;
+    const total = fixedSum + cardTotal;
+    const pay   = fixedSum + cardMin;
 
     if (!total && !pay) return;
 
@@ -274,40 +440,243 @@ function renderCharts(cards){
   }
 }
 
+/* ================= RENDER: FIXED TABLE ================= */
 function renderFixed(){
   const tb=document.getElementById("fixedTableBody");
   tb.innerHTML="";
-  FIXED.forEach(f=>{
+  const fixed = applyOverridesToFixed();
+  fixed.forEach(f=>{
     const m=monthlyReal(f);
     tb.innerHTML+=`<tr><td>${f.concept}</td><td class="right">${f.currency} ${m.toFixed(2)}</td></tr>`;
   });
 }
 
-function collectCards(){
-  const o={};
+/* ================= RENDER: SCHEDULE FORM ================= */
+function renderScheduleForm(){
+  const w = document.getElementById("scheduleForm");
+  w.innerHTML="";
 
-  // Total deuda
-  document.querySelectorAll("input[data-card-total]").forEach(i=>{
-    const name = i.dataset.cardTotal;
-    o[name] = o[name] || {};
-    o[name].amount = Number(i.value) || 0;
+  const fixed = applyOverridesToFixed();
+
+  const byCat = {};
+  fixed.forEach(x=>{
+    byCat[x.category] = byCat[x.category] || [];
+    byCat[x.category].push(x);
   });
 
-  // Min payment
-  document.querySelectorAll("input[data-card-min]").forEach(i=>{
-    const name = i.dataset.cardMin;
-    o[name] = o[name] || {};
-    o[name].min_payment = Number(i.value) || 0;
+  Object.keys(byCat).forEach(cat=>{
+    w.innerHTML += `<h2 style="margin-top:18px;">${cat}</h2>`;
+    byCat[cat].forEach(item=>{
+      const s = item.schedule || {};
+      const isMonthly = s.type==="monthly";
+      const valDay = isMonthly ? (Number(s.day)||1) : "";
+      const valNext = !isMonthly ? (s.next || "") : "";
+
+      const freqLabel = isMonthly
+        ? "Mensual"
+        : (s.type==="every_n_months" ? `Cada ${s.months} meses` : `Cada ${s.years} año(s)`);
+
+      w.innerHTML += `
+        <div class="card-item">
+          <div class="mini">
+            <span class="pill">${freqLabel}</span>
+            <span class="pill">${item.currency}</span>
+            <strong>${item.concept}</strong>
+            ${item.notes ? `<span class="muted"> — ${item.notes}</span>` : ``}
+          </div>
+
+          <div class="grid">
+            <div>
+              <div class="mini"><strong>${isMonthly ? "Día del mes" : "Próxima fecha"}</strong></div>
+              ${
+                isMonthly
+                  ? `<input type="number" min="1" max="31" data-fixed-day="${item.id}" value="${valDay}">`
+                  : `<input type="date" data-fixed-next="${item.id}" value="${valNext}">`
+              }
+            </div>
+            <div>
+              <div class="mini"><strong>Importe</strong></div>
+              <input type="text" value="${item.currency} ${Number(item.amount).toFixed(2)}" disabled>
+            </div>
+          </div>
+        </div>
+      `;
+    });
   });
 
-  // Paid flag
-  document.querySelectorAll("select[data-paid]").forEach(s=>{
-    const name = s.dataset.paid;
-    o[name] = o[name] || {};
-    o[name].paid = (s.value === "si");
+  // Tarjetas: solo due day (para el calendario)
+  w.innerHTML += `<h2 style="margin-top:18px;">Tarjetas</h2>`;
+  CARDS.forEach(c=>{
+    const d = getCardDueDay(c.id);
+    w.innerHTML += `
+      <div class="card-item">
+        <div class="mini">
+          <span class="pill">Mensual</span>
+          <span class="pill">${c.currency}</span>
+          <strong>${c.name}</strong>
+          <span class="muted"> — se muestra como “mínimo a pagar”</span>
+        </div>
+        <div class="grid">
+          <div>
+            <div class="mini"><strong>Día del mes</strong></div>
+            <input type="number" min="1" max="31" data-card-dueday="${c.id}" value="${d}">
+          </div>
+          <div>
+            <div class="mini"><strong>—</strong></div>
+            <input type="text" value="Se guarda al cambiar" disabled>
+          </div>
+        </div>
+      </div>
+    `;
   });
 
-  return o;
+  // listeners (auto-save)
+  document.querySelectorAll("input[data-fixed-day]").forEach(inp=>{
+    inp.addEventListener("change", ()=>{
+      const id = inp.dataset.fixedDay;
+      const day = Math.min(Math.max(1, Number(inp.value)||1), 31);
+      inp.value = day;
+
+      const ov = loadScheduleOverrides();
+      ov.fixed = ov.fixed || {};
+      ov.fixed[id] = ov.fixed[id] || {};
+      ov.fixed[id].schedule = ov.fixed[id].schedule || {};
+      ov.fixed[id].schedule.type = "monthly";
+      ov.fixed[id].schedule.day = day;
+      saveScheduleOverrides(ov);
+
+      renderFixed();
+      renderPayCalendar(window.__LAST_CARDS__ || {});
+      setStatus("Fechas guardadas ✅");
+    });
+  });
+
+  document.querySelectorAll("input[data-fixed-next]").forEach(inp=>{
+    inp.addEventListener("change", ()=>{
+      const id = inp.dataset.fixedNext;
+      const val = (inp.value||"").trim();
+      if(!val) return;
+
+      const base = FIXED.find(x=>x.id===id);
+      if(!base) return;
+
+      const ov = loadScheduleOverrides();
+      ov.fixed = ov.fixed || {};
+      ov.fixed[id] = ov.fixed[id] || {};
+      ov.fixed[id].schedule = ov.fixed[id].schedule || {};
+      // Mantén el tipo original (every_n_months / every_n_years) y solo cambia next
+      ov.fixed[id].schedule.type = base.schedule.type;
+      if(base.schedule.type==="every_n_months") ov.fixed[id].schedule.months = base.schedule.months;
+      if(base.schedule.type==="every_n_years") ov.fixed[id].schedule.years = base.schedule.years;
+      ov.fixed[id].schedule.next = val;
+      saveScheduleOverrides(ov);
+
+      renderFixed();
+      renderPayCalendar(window.__LAST_CARDS__ || {});
+      setStatus("Fechas guardadas ✅");
+    });
+  });
+
+  document.querySelectorAll("input[data-card-dueday]").forEach(inp=>{
+    inp.addEventListener("change", ()=>{
+      const id = inp.dataset.cardDueday;
+      const day = Math.min(Math.max(1, Number(inp.value)||1), 31);
+      inp.value = day;
+      setCardDueDay(id, day);
+      renderPayCalendar(window.__LAST_CARDS__ || {});
+      setStatus("Fechas guardadas ✅");
+    });
+  });
+}
+
+/* ================= RENDER: PAY CALENDAR ================= */
+function buildPayItems(cards, ym){
+  const [Y,M] = ym.split("-").map(Number);
+  const mIndex = M-1;
+
+  const fixed = applyOverridesToFixed();
+  const items = [];
+
+  // fixed items
+  fixed.forEach(f=>{
+    const occ = occursInMonth(f.schedule, ym);
+    if(!occ.occurs) return;
+    items.push({
+      id: "fixed__"+f.id,
+      date: occ.date,
+      concept: f.concept,
+      meta: f.category + (f.notes ? " — " + f.notes : ""),
+      currency: f.currency,
+      amount: Number(f.amount)||0
+    });
+  });
+
+  // cards as "mínimo a pagar"
+  CARDS.forEach(c=>{
+    const day = clampDay(Y, mIndex, getCardDueDay(c.id));
+    const date = new Date(Y, mIndex, day);
+
+    // usa min_payment del mes (si no hay, 0)
+    const min = Number(cards?.[c.name]?.min_payment || 0);
+
+    items.push({
+      id: "card__"+c.id,
+      date,
+      concept: `Tarjeta ${c.name} (mínimo)`,
+      meta: "Tarjetas",
+      currency: c.currency,
+      amount: min
+    });
+  });
+
+  // orden por fecha
+  items.sort((a,b)=>a.date-b.date);
+  return items;
+}
+
+function renderPayCalendar(cards){
+  const ym = currentMonthISO();
+  const paid = loadPaidMap(ym);
+  const tb = document.getElementById("payTableBody");
+  tb.innerHTML = "";
+
+  const items = buildPayItems(cards, ym);
+
+  if(!items.length){
+    tb.innerHTML = `<tr><td colspan="4" class="muted">Sin pagos en este mes.</td></tr>`;
+    return;
+  }
+
+  items.forEach(it=>{
+    const key = it.id;
+    const isPaid = !!paid[key];
+    const amountText = `${it.currency} ${Number(it.amount||0).toFixed(2)}`;
+
+    tb.innerHTML += `
+      <tr class="${isPaid ? "row-ok":""}">
+        <td>${prettyDate(it.date)}</td>
+        <td>
+          <strong>${it.concept}</strong><br>
+          <span class="muted">${it.meta}</span>
+        </td>
+        <td class="right">${amountText}</td>
+        <td class="right">
+          <input type="checkbox" style="width:auto; transform:scale(1.2); margin:0;"
+                 data-paycheck="${key}" ${isPaid ? "checked":""}>
+        </td>
+      </tr>
+    `;
+  });
+
+  document.querySelectorAll("input[data-paycheck]").forEach(ch=>{
+    ch.addEventListener("change", ()=>{
+      const key = ch.dataset.paycheck;
+      const map = loadPaidMap(ym);
+      map[key] = !!ch.checked;
+      savePaidMap(ym, map);
+      renderPayCalendar(window.__LAST_CARDS__ || {});
+    });
+  });
 }
 
 /* ================= AUTO LOAD ================= */
@@ -318,13 +687,18 @@ async function autoLoad(){
     const r=await apiCall("get",m);
     const d=r.data||{cards:{}};
 
+    window.__LAST_CARDS__ = d.cards || {};
+
     renderCards(d.cards);
     renderCharts(d.cards);
+    renderPayCalendar(d.cards);
 
     setStatus("Actualizado ✅");
   }catch(e){
+    window.__LAST_CARDS__ = {};
     renderCards({});
     renderCharts({});
+    renderPayCalendar({});
     setStatus(e.message);
   }
 }
@@ -347,6 +721,8 @@ async function autoLoad(){
   renderFixed();
   renderCards({});
   renderCharts({});
+  renderScheduleForm();
+  renderPayCalendar({});
 
   const p=localStorage.getItem(PIN_KEY);
   document.getElementById("pinHint").textContent=p?"PIN guardado ✅":"Introduce el PIN";
@@ -363,8 +739,14 @@ document.getElementById("savePin").onclick=()=>{
   autoLoad();
 };
 
-document.getElementById("monthSelect").onchange=autoLoad;
-document.getElementById("yearSelect").onchange=autoLoad;
+document.getElementById("monthSelect").onchange=()=>{
+  renderPayCalendar(window.__LAST_CARDS__ || {});
+  autoLoad();
+};
+document.getElementById("yearSelect").onchange=()=>{
+  renderPayCalendar(window.__LAST_CARDS__ || {});
+  autoLoad();
+};
 
 document.getElementById("syncNow").onclick=async()=>{
   try{
@@ -382,6 +764,7 @@ document.getElementById("syncNow").onclick=async()=>{
 document.getElementById("resetCards").onclick=()=>{
   renderCards({});
   renderCharts({});
+  renderPayCalendar({});
   setStatus("Limpio");
 };
 </script>
