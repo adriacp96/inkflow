@@ -59,6 +59,8 @@
     .right { text-align: right; }
 
     .status-msg { font-size: 0.8rem; font-style: italic; }
+
+    .mini { font-size: 0.8rem; opacity: 0.9; }
   </style>
 </head>
 <body>
@@ -117,7 +119,6 @@
 /* ================= CONFIG ================= */
 const SUPABASE_URL = "https://wogqftmhwgosoaldwees.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvZ3FmdG1od2dvc29hbGR3ZWVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1ODE2MjUsImV4cCI6MjA4NTE1NzYyNX0.lJw1YPSOiV-RJBrhX7aNpJiwUwGjes6cNxTfg5CEg38";
-
 const PIN_KEY = "fin_pin_v1";
 
 /* ================= DATOS ================= */
@@ -149,7 +150,6 @@ function monthlyReal(f){
   if(f.freq==="Trienal") return f.amount/36;
   return 0;
 }
-
 function setStatus(t){ document.getElementById("status").textContent = t; }
 
 function ensurePin(){
@@ -188,18 +188,36 @@ async function apiCall(action, month, data=null){
 function renderCards(cards){
   const w = document.getElementById("cardsForm");
   w.innerHTML="";
+
   CARDS.forEach(c=>{
-    const a = cards?.[c.name]?.amount ?? "";
-    const p = cards?.[c.name]?.paid;
+    const total = (cards?.[c.name]?.amount ?? "");
+    const minPay = (cards?.[c.name]?.min_payment ?? ""); // NUEVO
+    const paid = !!cards?.[c.name]?.paid;
+
     w.innerHTML+=`
       <div class="card-item">
         <label>${c.name} (${c.currency})</label>
+
         <div class="grid">
-          <input type="number" step="0.01" data-card="${c.name}" value="${a}">
-          <select data-paid="${c.name}">
-            <option value="no" ${!p?"selected":""}>Pendiente</option>
-            <option value="si" ${p?"selected":""}>Pagado</option>
-          </select>
+          <div>
+            <div class="mini"><strong>Deuda total</strong></div>
+            <input type="number" step="0.01" data-card-total="${c.name}" value="${total}">
+          </div>
+          <div>
+            <div class="mini"><strong>Mínimo a pagar este mes</strong></div>
+            <input type="number" step="0.01" data-card-min="${c.name}" value="${minPay}">
+          </div>
+        </div>
+
+        <div class="grid">
+          <div></div>
+          <div>
+            <div class="mini"><strong>Estado</strong></div>
+            <select data-paid="${c.name}">
+              <option value="no" ${!paid?"selected":""}>Pendiente</option>
+              <option value="si" ${paid?"selected":""}>Pagado</option>
+            </select>
+          </div>
         </div>
       </div>`;
   });
@@ -208,17 +226,52 @@ function renderCards(cards){
 function renderCharts(cards){
   const c=document.getElementById("chartsContainer");
   c.innerHTML="";
+
+  // Dos barras por moneda:
+  // - TOTAL (fijos + deuda total tarjetas)
+  // - A PAGAR (fijos + mínimo tarjetas)
   ["AED","EUR","IDR"].forEach(cur=>{
-    let f=0; FIXED.filter(x=>x.currency===cur).forEach(x=>f+=monthlyReal(x));
-    let ca=0; CARDS.filter(x=>x.currency===cur).forEach(x=>ca+=Number(cards?.[x.name]?.amount||0));
-    const t=f+ca; if(!t) return;
-    const pct=Math.min((t/(cur==="IDR"?10000:8000))*100,100);
-    c.innerHTML+=`
+    let fixed=0; FIXED.filter(x=>x.currency===cur).forEach(x=>fixed+=monthlyReal(x));
+
+    let cardTotal=0;
+    let cardMin=0;
+
+    CARDS.filter(x=>x.currency===cur).forEach(x=>{
+      cardTotal += Number(cards?.[x.name]?.amount || 0);
+      cardMin   += Number(cards?.[x.name]?.min_payment || 0);
+    });
+
+    const total = fixed + cardTotal;
+    const pay   = fixed + cardMin;
+
+    if (!total && !pay) return;
+
+    const maxVal = cur === "IDR" ? 10000 : 8000;
+    const pctTotal = Math.min((total / maxVal) * 100, 100);
+    const pctPay   = Math.min((pay   / maxVal) * 100, 100);
+
+    c.innerHTML += `
       <div class="chart-row">
-        <div class="bar-label"><strong>${cur}</strong><span>${t.toFixed(2)}</span></div>
-        <div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div>
-      </div>`;
+        <div class="bar-label">
+          <span><strong>${cur}</strong> (TOTAL)</span>
+          <span>${total.toFixed(2)}</span>
+        </div>
+        <div class="bar-bg"><div class="bar-fill" style="width:${pctTotal}%"></div></div>
+      </div>
+
+      <div class="chart-row">
+        <div class="bar-label">
+          <span><strong>${cur}</strong> (A PAGAR)</span>
+          <span>${pay.toFixed(2)}</span>
+        </div>
+        <div class="bar-bg"><div class="bar-fill" style="width:${pctPay}%"></div></div>
+      </div>
+    `;
   });
+
+  if(!c.innerHTML.trim()){
+    c.innerHTML = `<p style="font-size:0.8rem">Sin datos para este mes.</p>`;
+  }
 }
 
 function renderFixed(){
@@ -232,12 +285,28 @@ function renderFixed(){
 
 function collectCards(){
   const o={};
-  document.querySelectorAll("input[data-card]").forEach(i=>{
-    o[i.dataset.card]={amount:Number(i.value)||0};
+
+  // Total deuda
+  document.querySelectorAll("input[data-card-total]").forEach(i=>{
+    const name = i.dataset.cardTotal;
+    o[name] = o[name] || {};
+    o[name].amount = Number(i.value) || 0;
   });
+
+  // Min payment
+  document.querySelectorAll("input[data-card-min]").forEach(i=>{
+    const name = i.dataset.cardMin;
+    o[name] = o[name] || {};
+    o[name].min_payment = Number(i.value) || 0;
+  });
+
+  // Paid flag
   document.querySelectorAll("select[data-paid]").forEach(s=>{
-    o[s.dataset.paid].paid=s.value==="si";
+    const name = s.dataset.paid;
+    o[name] = o[name] || {};
+    o[name].paid = (s.value === "si");
   });
+
   return o;
 }
 
@@ -248,8 +317,10 @@ async function autoLoad(){
     setStatus("Cargando…");
     const r=await apiCall("get",m);
     const d=r.data||{cards:{}};
+
     renderCards(d.cards);
     renderCharts(d.cards);
+
     setStatus("Actualizado ✅");
   }catch(e){
     renderCards({});
@@ -274,10 +345,13 @@ async function autoLoad(){
   ys.value=y;
 
   renderFixed();
+  renderCards({});
+  renderCharts({});
 
   const p=localStorage.getItem(PIN_KEY);
   document.getElementById("pinHint").textContent=p?"PIN guardado ✅":"Introduce el PIN";
   if(p) autoLoad();
+  else setStatus("Introduce el PIN y pulsa OK.");
 })();
 
 document.getElementById("savePin").onclick=()=>{
@@ -296,8 +370,10 @@ document.getElementById("syncNow").onclick=async()=>{
   try{
     const m=currentMonthISO();
     setStatus("Sincronizando…");
+
     const cards=collectCards();
     await apiCall("set",m,{month:m,cards});
+
     await autoLoad();
     setStatus("Sincronizado ✅");
   }catch(e){ setStatus(e.message); }
