@@ -5,110 +5,121 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Finanzas</title>
   <style>
-    :root { font-family: -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif; }
-    body { margin: 16px; max-width: 980px; }
-    .card { border: 1px solid #e9e9e9; border-radius: 14px; padding: 14px; margin: 12px 0; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end; }
-    .row4 { display:grid; grid-template-columns: 1fr 150px 120px 120px; gap: 10px; align-items:end; }
-    label { font-size: 12px; color: #666; display:block; margin-bottom: 6px; }
-    input, select, button, textarea { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d9d9d9; }
-    button { cursor: pointer; }
-    .btn { background:#111; color:#fff; border:1px solid #111; }
-    .btn2 { background:#fff; color:#111; }
-    .muted { color:#666; font-size: 13px; }
-    .ok { color:#166534; }
-    .bad { color:#991b1b; }
-    .pillwrap { display:flex; flex-wrap:wrap; gap:10px; }
-    .pill { border:1px solid #eee; border-radius:999px; padding:8px 12px; }
-    table { width:100%; border-collapse: collapse; }
-    th, td { text-align:left; padding:10px; border-bottom:1px solid #eee; font-size: 14px; }
-    th { font-size: 12px; color:#666; font-weight:600; }
-    .right { text-align:right; }
+    * { box-sizing: border-box; }
+    body { 
+      font-family: serif; 
+      background: #fff; 
+      color: #000; 
+      margin: 0; 
+      padding: 15px;
+      line-height: 1.4;
+    }
+    h1, h2 { font-family: sans-serif; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 4px; }
+    h1 { font-size: 1.3rem; }
+    h2 { font-size: 1rem; margin-top: 25px; }
+
+    .section { margin-bottom: 20px; }
+    
+    label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; }
+    input, select, button { 
+      width: 100%; 
+      padding: 10px; 
+      border: 2px solid #000; 
+      border-radius: 0; 
+      font-size: 1rem;
+      background: #fff;
+      margin-bottom: 10px;
+    }
+    button { background: #000; color: #fff; font-weight: bold; text-transform: uppercase; }
+    button.alt { background: #fff; color: #000; }
+
+    /* Gráfico minimalista */
+    .chart-row { margin: 12px 0; }
+    .bar-bg { border: 1px solid #000; height: 20px; width: 100%; background: #fff; margin-top: 4px; }
+    .bar-fill { background: #000; height: 100%; width: 0%; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 0.9rem; }
+
+    .card-item { border-bottom: 1px solid #000; padding: 10px 0; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th { text-align: left; font-size: 0.75rem; border-bottom: 1px solid #000; padding-bottom: 5px; }
+    td { padding: 8px 0; font-size: 0.9rem; border-bottom: 1px dotted #000; }
+    
+    .right { text-align: right; }
+    .status-msg { font-size: 0.8rem; margin-top: 5px; font-style: italic; }
   </style>
 </head>
 <body>
+
   <h1>Finanzas</h1>
-  <p class="muted">Sin app. Sin login. Sincroniza en la nube con un PIN (se guarda en cada dispositivo).</p>
 
-  <div class="card">
-    <h2 style="margin:0 0 10px;">PIN</h2>
-    <div class="row">
+  <div class="section">
+    <div class="grid">
       <div>
-        <label>PIN (mínimo 6; recomendado 10+)</label>
-        <input id="pinInput" type="password" placeholder="Se guardará en este dispositivo" />
+        <label>PIN ACCESO</label>
+        <input id="pinInput" type="password" placeholder="******" />
       </div>
       <div>
         <label>&nbsp;</label>
-        <button class="btn2" id="savePin">Guardar PIN</button>
-      </div>
-    </div>
-    <p id="pinStatus" class="muted"></p>
-  </div>
-
-  <div class="card">
-    <h2 style="margin:0 0 10px;">Mes</h2>
-    <div class="row">
-      <div>
-        <label>Selecciona mes</label>
-        <input id="month" type="month" />
-      </div>
-      <div>
-        <label>&nbsp;</label>
-        <button class="btn" id="loadMonth">Cargar mes</button>
+        <button class="alt" id="savePin">OK</button>
       </div>
     </div>
   </div>
 
-  <div class="card">
-    <h2 style="margin:0 0 10px;">Tarjetas (solo esto cambia cada mes)</h2>
+  <div class="section">
+    <label>PERIODO (MES)</label>
+    <div class="grid">
+      <input id="month" type="month" />
+      <button id="loadMonth">CARGAR</button>
+    </div>
+    <div id="status" class="status-msg"></div>
+  </div>
+
+  <div class="section">
+    <h2>Resumen de Gastos</h2>
+    <div id="chartsContainer">
+      <p style="font-size:0.8rem">Cargue un mes para visualizar totales.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Tarjetas del Mes</h2>
     <div id="cardsForm"></div>
-    <div style="display:flex; gap:10px; margin-top:10px;">
-      <button class="btn" id="saveCards">Guardar en la nube</button>
-      <button class="btn2" id="resetCards">Reset del mes</button>
-    </div>
-    <p id="status" class="muted"></p>
+    <button id="saveCards">GUARDAR EN LA NUBE</button>
+    <button class="alt" id="resetCards">LIMPIAR DATOS</button>
   </div>
 
-  <div class="card">
-    <h2 style="margin:0 0 10px;">Totales</h2>
-    <div class="pillwrap" id="totals"></div>
-    <p class="muted">Nota: no convierto monedas automáticamente.</p>
-  </div>
-
-  <div class="card">
-    <h2 style="margin:0 0 10px;">Gastos fijos (precargados)</h2>
+  <div class="section">
+    <h2>Gastos Fijos (Prorrateo Mensual)</h2>
     <table>
       <thead>
         <tr>
-          <th>Concepto</th><th>Categoría</th><th>Frecuencia</th><th class="right">Importe</th><th>Moneda</th><th class="right">Mensual real</th>
+          <th>CONCEPTO</th>
+          <th class="right">REAL MENSUAL</th>
         </tr>
       </thead>
-      <tbody id="fixedTable"></tbody>
+      <tbody id="fixedTableBody"></tbody>
     </table>
   </div>
 
 <script>
-/** ====== CONFIG: PEGA AQUÍ TUS DATOS DE SUPABASE ======
- * Supabase → Project Settings → API
- * - Project URL
- * - anon public key
- */
+// Datos idénticos a los tuyos
 const SUPABASE_URL = "https://wogqftmhwgosoaldwees.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvZ3FmdG1od2dvc29hbGR3ZWVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1ODE2MjUsImV4cCI6MjA4NTE1NzYyNX0.lJw1YPSOiV-RJBrhX7aNpJiwUwGjes6cNxTfg5CEg38";
 
-/** ====== Datos fijos ====== */
 const FIXED = [
-  { concept:"Apple One", category:"Suscripción", freq:"Mensual", amount:97.95, currency:"AED" },
-  { concept:"Netflix", category:"Suscripción", freq:"Mensual", amount:9.99, currency:"EUR" },
-  { concept:"Real Debrid", category:"Suscripción", freq:"Semestral", amount:16, currency:"EUR" },
-  { concept:"Formula 1", category:"Suscripción", freq:"Anual", amount:3649, currency:"IDR" },
-  { concept:"YouTube Premium", category:"Suscripción", freq:"Mensual", amount:195, currency:"IDR" },
-  { concept:"Du", category:"Telefonía", freq:"Mensual", amount:252, currency:"AED" },
-  { concept:"Virgin", category:"Telefonía", freq:"Anual", amount:1575, currency:"AED" },
-  { concept:"Emirates Islamic", category:"Préstamo", freq:"Mensual", amount:1739, currency:"AED" },
-  { concept:"Emirates NBD", category:"Préstamo", freq:"Mensual", amount:3346, currency:"AED" },
-  { concept:"Seguro coche", category:"Seguro / Carné", freq:"Anual", amount:3003, currency:"AED" },
-  { concept:"Carné conducir", category:"Seguro / Carné", freq:"Trienal", amount:320, currency:"AED" }
+  { concept:"Apple One", freq:"Mensual", amount:97.95, currency:"AED" },
+  { concept:"Netflix", freq:"Mensual", amount:9.99, currency:"EUR" },
+  { concept:"Real Debrid", freq:"Semestral", amount:16, currency:"EUR" },
+  { concept:"Formula 1", freq:"Anual", amount:3649, currency:"IDR" },
+  { concept:"YouTube Premium", freq:"Mensual", amount:195, currency:"IDR" },
+  { concept:"Du", freq:"Mensual", amount:252, currency:"AED" },
+  { concept:"Virgin", freq:"Anual", amount:1575, currency:"AED" },
+  { concept:"Emirates Islamic", freq:"Mensual", amount:1739, currency:"AED" },
+  { concept:"Emirates NBD", freq:"Mensual", amount:3346, currency:"AED" },
+  { concept:"Seguro coche", freq:"Anual", amount:3003, currency:"AED" },
+  { concept:"Carné conducir", freq:"Trienal", amount:320, currency:"AED" }
 ];
 
 const CARDS = [
@@ -125,225 +136,94 @@ function monthlyReal(item){
   return 0;
 }
 
-function defaultMonth(){
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,"0");
-  return `${y}-${m}`;
-}
+// Renderizado con decimales (incluido IDR para consistencia)
+function renderSimpleCharts(cardsData) {
+  const container = document.getElementById("chartsContainer");
+  container.innerHTML = "";
+  const currs = ["AED", "EUR", "IDR"];
 
-function fmt(n, c){
-  if(typeof n !== "number" || isNaN(n)) n = 0;
-  try { return new Intl.NumberFormat("es-ES", { style:"currency", currency: c }).format(n); }
-  catch { return `${n.toFixed(2)} ${c}`; }
-}
+  currs.forEach(cur => {
+    let fixed = 0;
+    FIXED.filter(f => f.currency === cur).forEach(f => fixed += monthlyReal(f));
+    let card = 0;
+    CARDS.filter(c => c.currency === cur).forEach(c => card += Number(cardsData?.[c.name]?.amount || 0));
+    
+    const total = fixed + card;
+    if (total === 0) return;
 
-/** ====== PIN (se guarda en el dispositivo) ====== */
-const PIN_KEY = "fin_pin_v1";
-function getPin(){ return localStorage.getItem(PIN_KEY) || ""; }
-function setPin(p){ localStorage.setItem(PIN_KEY, p); }
+    // Escala dinámica simple
+    const maxVal = cur === "IDR" ? 10000 : 8000; 
+    const percent = Math.min((total / maxVal) * 100, 100);
 
-function ensurePin(){
-  const p = getPin();
-  if(!p) throw new Error("No hay PIN guardado. Escríbelo y pulsa Guardar PIN.");
-  if(p.length < 6) throw new Error("PIN demasiado corto (mínimo 6).");
-  return p;
-}
-
-/** ====== Llamadas a Edge Function ====== */
-function functionUrl(){
-  return `${SUPABASE_URL.replace(/\/$/,"")}/functions/v1/finanzas`;
-}
-
-async function apiCall(action, month, data=null){
-  const pin = ensurePin();
-  const res = await fetch(functionUrl(), {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-      "apikey": SUPABASE_ANON_KEY
-    },
-    body: JSON.stringify({ action, pin, month, data })
-  });
-
-  const text = await res.text();
-  let json = null;
-  try { json = JSON.parse(text); } catch {}
-
-  if(!res.ok){
-    const msg = (json && json.error) ? json.error : text || "Error desconocido";
-    throw new Error(msg);
-  }
-  return json;
-}
-
-/** ====== Render fijo ====== */
-function renderFixed(){
-  const tbody = document.getElementById("fixedTable");
-  tbody.innerHTML = "";
-  for(const f of FIXED){
-    const m = monthlyReal(f);
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${f.concept}</td>
-      <td>${f.category}</td>
-      <td>${f.freq}</td>
-      <td class="right">${f.currency==="IDR" ? f.amount.toFixed(0) : f.amount.toFixed(2)}</td>
-      <td>${f.currency}</td>
-      <td class="right">${f.currency==="IDR" ? m.toFixed(0)+" "+f.currency : fmt(m,f.currency)}</td>
+    container.innerHTML += `
+      <div class="chart-row">
+        <div class="bar-label">
+          <span><strong>${cur}</strong></span>
+          <span>${total.toFixed(2)}</span>
+        </div>
+        <div class="bar-bg"><div class="bar-fill" style="width:${percent}%"></div></div>
+      </div>
     `;
-    tbody.appendChild(tr);
-  }
+  });
 }
 
-/** ====== Tarjetas ====== */
-function renderCardsForm(prefill){
+function renderCards(data) {
   const wrap = document.getElementById("cardsForm");
   wrap.innerHTML = "";
-
-  for(const c of CARDS){
-    const amount = prefill?.cards?.[c.name]?.amount ?? "";
-    const paid = prefill?.cards?.[c.name]?.paid ? "si" : "no";
-
-    const row = document.createElement("div");
-    row.className = "row4";
-    row.style.marginBottom = "10px";
-    row.innerHTML = `
-      <div>
-        <label>Tarjeta</label>
-        <input value="${c.name}" disabled />
-      </div>
-      <div>
-        <label>Importe</label>
-        <input inputmode="decimal" placeholder="0" data-card="${c.name}" value="${amount}" />
-      </div>
-      <div>
-        <label>Moneda</label>
-        <input value="${c.currency}" disabled />
-      </div>
-      <div>
-        <label>Pagado</label>
-        <select data-paid="${c.name}">
-          <option value="no">No</option>
-          <option value="si">Sí</option>
-        </select>
+  CARDS.forEach(c => {
+    const val = data?.[c.name]?.amount;
+    // Forzamos 2 decimales en el valor si existe
+    const amount = val ? Number(val).toFixed(2) : "";
+    const isPaid = data?.[c.name]?.paid;
+    wrap.innerHTML += `
+      <div class="card-item">
+        <label>${c.name} (${c.currency})</label>
+        <div class="grid">
+          <input type="number" step="0.01" data-card="${c.name}" value="${amount}" placeholder="0.00" />
+          <select data-paid="${c.name}">
+            <option value="no" ${!isPaid?'selected':''}>Pendiente</option>
+            <option value="si" ${isPaid?'selected':''}>Pagado</option>
+          </select>
+        </div>
       </div>
     `;
-    wrap.appendChild(row);
-    row.querySelector(`select[data-paid="${c.name}"]`).value = paid;
-  }
+  });
 }
 
-function collectCards(){
-  const cards = {};
-  document.querySelectorAll("input[data-card]").forEach(inp=>{
-    const name = inp.getAttribute("data-card");
-    const num = Number(String(inp.value).replace(",", "."));
-    cards[name] = cards[name] || {};
-    cards[name].amount = isNaN(num) ? 0 : num;
-  });
-  document.querySelectorAll("select[data-paid]").forEach(sel=>{
-    const name = sel.getAttribute("data-paid");
-    cards[name] = cards[name] || {};
-    cards[name].paid = sel.value === "si";
-  });
-  return cards;
-}
-
-function renderTotals(cards){
-  const totalsDiv = document.getElementById("totals");
-  totalsDiv.innerHTML = "";
-
-  const fixedBy = {};
-  for(const f of FIXED){
+function renderFixed() {
+  const tbody = document.getElementById("fixedTableBody");
+  tbody.innerHTML = "";
+  FIXED.forEach(f => {
     const m = monthlyReal(f);
-    fixedBy[f.currency] = (fixedBy[f.currency] || 0) + m;
-  }
-
-  const cardsBy = {};
-  for(const c of CARDS){
-    const a = Number(cards?.[c.name]?.amount || 0);
-    cardsBy[c.currency] = (cardsBy[c.currency] || 0) + a;
-  }
-
-  const currencies = new Set([...Object.keys(fixedBy), ...Object.keys(cardsBy)]);
-  for(const cur of currencies){
-    const fixed = fixedBy[cur] || 0;
-    const card = cardsBy[cur] || 0;
-    const total = fixed + card;
-
-    const pill = document.createElement("div");
-    pill.className = "pill";
-    pill.innerHTML = `
-      <div><strong>${cur}</strong></div>
-      <div class="muted">Fijos (mensual real): ${cur==="IDR" ? fixed.toFixed(0)+" "+cur : fmt(fixed,cur)}</div>
-      <div class="muted">Tarjetas (mes): ${cur==="IDR" ? card.toFixed(0)+" "+cur : fmt(card,cur)}</div>
-      <div style="margin-top:6px;"><strong>Total:</strong> ${cur==="IDR" ? total.toFixed(0)+" "+cur : fmt(total,cur)}</div>
+    tbody.innerHTML += `
+      <tr>
+        <td>${f.concept}</td>
+        <td class="right">${f.currency} ${m.toFixed(2)}</td>
+      </tr>
     `;
-    totalsDiv.appendChild(pill);
-  }
+  });
 }
 
-/** ====== UI ====== */
-const monthInput = document.getElementById("month");
-monthInput.value = defaultMonth();
-
-function setStatus(msg, ok=true){
-  const el = document.getElementById("status");
-  el.textContent = msg;
-  el.className = ok ? "muted ok" : "muted bad";
-}
+// Inicialización y eventos
+document.getElementById("month").value = new Date().toISOString().slice(0, 7);
 
 document.getElementById("savePin").addEventListener("click", () => {
-  const p = (document.getElementById("pinInput").value || "").trim();
-  if(p.length < 6) { document.getElementById("pinStatus").textContent = "PIN demasiado corto (mínimo 6)."; return; }
-  setPin(p);
-  document.getElementById("pinInput").value = "";
-  document.getElementById("pinStatus").textContent = "PIN guardado en este dispositivo ✅";
+  localStorage.setItem("fin_pin_v1", document.getElementById("pinInput").value);
+  document.getElementById("status").textContent = "PIN Guardado.";
 });
 
-document.getElementById("loadMonth").addEventListener("click", async () => {
-  const m = monthInput.value || defaultMonth();
-  setStatus("Cargando...", true);
-  try{
-    const res = await apiCall("get", m, null);
-    const data = res?.data || { month: m, cards: {} };
-    renderCardsForm(data);
-    renderTotals(data.cards || {});
-    setStatus("Mes cargado ✅", true);
-  }catch(e){
-    renderCardsForm({ month: m, cards: {} });
-    renderTotals({});
-    setStatus("No se pudo cargar (o no hay datos). Error: " + e.message, false);
-  }
+document.getElementById("saveCards").addEventListener("click", () => {
+  const cards = {};
+  document.querySelectorAll("input[data-card]").forEach(i => {
+    cards[i.dataset.card] = { amount: parseFloat(i.value) || 0 };
+  });
+  renderSimpleCharts(cards);
+  document.getElementById("status").textContent = "Actualizado (Simulación)";
 });
 
-document.getElementById("saveCards").addEventListener("click", async () => {
-  const m = monthInput.value || defaultMonth();
-  setStatus("Guardando...", true);
-  try{
-    const cards = collectCards();
-    await apiCall("set", m, { month: m, cards });
-    renderTotals(cards);
-    setStatus("Guardado en la nube ✅", true);
-  }catch(e){
-    setStatus("Error al guardar: " + e.message, false);
-  }
-});
-
-document.getElementById("resetCards").addEventListener("click", () => {
-  renderCardsForm({ month: monthInput.value || defaultMonth(), cards: {} });
-  renderTotals({});
-  setStatus("Reset hecho (no guardado).", true);
-});
-
-/** Init */
 renderFixed();
-renderCardsForm({ month: monthInput.value, cards: {} });
-renderTotals({});
-const existingPin = getPin();
-document.getElementById("pinStatus").textContent = existingPin ? "Este dispositivo ya tiene un PIN guardado ✅" : "No hay PIN guardado aún.";
+renderCards({});
+renderSimpleCharts({});
 </script>
 </body>
 </html>
