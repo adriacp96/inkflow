@@ -3,20 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Finanzas (PIN)</title>
+  <title>Finanzas</title>
   <style>
     :root { font-family: -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif; }
     body { margin: 16px; max-width: 980px; }
-    h1 { margin: 6px 0 12px; }
     .card { border: 1px solid #e9e9e9; border-radius: 14px; padding: 14px; margin: 12px 0; }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end; }
-    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; align-items: end; }
-    .row4 { display: grid; grid-template-columns: 1fr 150px 120px 120px; gap: 10px; align-items: end; }
+    .row4 { display:grid; grid-template-columns: 1fr 150px 120px 120px; gap: 10px; align-items:end; }
     label { font-size: 12px; color: #666; display:block; margin-bottom: 6px; }
     input, select, button, textarea { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d9d9d9; }
     button { cursor: pointer; }
-    .btn { background: #111; color: #fff; border: 1px solid #111; }
-    .btn2 { background: #fff; color: #111; }
+    .btn { background:#111; color:#fff; border:1px solid #111; }
+    .btn2 { background:#fff; color:#111; }
     .muted { color:#666; font-size: 13px; }
     .ok { color:#166534; }
     .bad { color:#991b1b; }
@@ -26,37 +24,25 @@
     th, td { text-align:left; padding:10px; border-bottom:1px solid #eee; font-size: 14px; }
     th { font-size: 12px; color:#666; font-weight:600; }
     .right { text-align:right; }
-    .small { font-size: 12px; }
-    .danger { background:#fff7ed; border:1px solid #fed7aa; }
-    code { background:#f6f6f6; padding:2px 6px; border-radius:6px; }
   </style>
 </head>
 <body>
   <h1>Finanzas</h1>
-  <p class="muted">Sin app. Se sincroniza con un PIN usando Supabase (gratis). No hace falta email.</p>
+  <p class="muted">Sin app. Sin login. Sincroniza en la nube con un PIN (se guarda en cada dispositivo).</p>
 
-  <div class="card danger">
-    <h2 style="margin:0 0 10px;">Conexión</h2>
-    <div class="row3">
+  <div class="card">
+    <h2 style="margin:0 0 10px;">PIN</h2>
+    <div class="row">
       <div>
-        <label>Supabase URL</label>
-        <input id="sbUrl" placeholder="https://xxxx.supabase.co" />
+        <label>PIN (mínimo 6; recomendado 10+)</label>
+        <input id="pinInput" type="password" placeholder="Se guardará en este dispositivo" />
       </div>
       <div>
-        <label>Supabase Anon Key</label>
-        <input id="sbAnon" placeholder="eyJhbGciOi..." />
-      </div>
-      <div>
-        <label>PIN (tu clave)</label>
-        <input id="pin" type="password" placeholder="mínimo 6 dígitos" />
+        <label>&nbsp;</label>
+        <button class="btn2" id="savePin">Guardar PIN</button>
       </div>
     </div>
-    <div style="display:flex; gap:10px; margin-top:10px;">
-      <button class="btn" id="saveConn">Guardar conexión</button>
-      <button class="btn2" id="clearConn">Borrar</button>
-    </div>
-    <p class="muted small">Consejo: usa un PIN largo (10+). Esto es lo que protege tus datos.</p>
-    <p id="connStatus" class="muted"></p>
+    <p id="pinStatus" class="muted"></p>
   </div>
 
   <div class="card">
@@ -80,13 +66,13 @@
       <button class="btn" id="saveCards">Guardar en la nube</button>
       <button class="btn2" id="resetCards">Reset del mes</button>
     </div>
-    <p id="saveStatus" class="muted"></p>
+    <p id="status" class="muted"></p>
   </div>
 
   <div class="card">
     <h2 style="margin:0 0 10px;">Totales</h2>
     <div class="pillwrap" id="totals"></div>
-    <p class="muted small">Nota: no convierto monedas automáticamente. Si quieres, luego añadimos tipo de cambio manual.</p>
+    <p class="muted">Nota: no convierto monedas automáticamente.</p>
   </div>
 
   <div class="card">
@@ -101,25 +87,16 @@
     </table>
   </div>
 
-  <div class="card">
-    <h2 style="margin:0 0 10px;">Backup</h2>
-    <div class="row">
-      <div>
-        <label>Exportar (JSON) del mes cargado</label>
-        <button class="btn2" id="exportBtn">Copiar JSON</button>
-      </div>
-      <div>
-        <label>Importar (pega JSON del mes y guarda)</label>
-        <button class="btn2" id="importBtn">Importar JSON</button>
-      </div>
-    </div>
-    <label style="margin-top:10px;">JSON</label>
-    <textarea id="backupArea" rows="6" placeholder="Aquí aparece el JSON al exportar o aquí pegas para importar"></textarea>
-    <p class="muted small">Esto sirve por si algún día cambias de backend o quieres guardar una copia.</p>
-  </div>
-
 <script>
-/** ====== Tus fijos ====== */
+/** ====== CONFIG: PEGA AQUÍ TUS DATOS DE SUPABASE ======
+ * Supabase → Project Settings → API
+ * - Project URL
+ * - anon public key
+ */
+const SUPABASE_URL = "https://wogqftmhwgosoaldwees.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvZ3FmdG1od2dvc29hbGR3ZWVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1ODE2MjUsImV4cCI6MjA4NTE1NzYyNX0.lJw1YPSOiV-RJBrhX7aNpJiwUwGjes6cNxTfg5CEg38";
+
+/** ====== Datos fijos ====== */
 const FIXED = [
   { concept:"Apple One", category:"Suscripción", freq:"Mensual", amount:97.95, currency:"AED" },
   { concept:"Netflix", category:"Suscripción", freq:"Mensual", amount:9.99, currency:"EUR" },
@@ -157,62 +134,42 @@ function defaultMonth(){
 
 function fmt(n, c){
   if(typeof n !== "number" || isNaN(n)) n = 0;
-  try {
-    return new Intl.NumberFormat("es-ES", { style:"currency", currency: c }).format(n);
-  } catch {
-    return `${n.toFixed(2)} ${c}`;
-  }
+  try { return new Intl.NumberFormat("es-ES", { style:"currency", currency: c }).format(n); }
+  catch { return `${n.toFixed(2)} ${c}`; }
 }
 
-/** ====== Estado local (solo para recordar URL/KEY, NO para datos) ====== */
-const LS = "fin_conn_v1";
-function loadConn(){
-  try{ return JSON.parse(localStorage.getItem(LS) || "{}"); } catch { return {}; }
-}
-function saveConn(obj){ localStorage.setItem(LS, JSON.stringify(obj)); }
-function clearConn(){ localStorage.removeItem(LS); }
+/** ====== PIN (se guarda en el dispositivo) ====== */
+const PIN_KEY = "fin_pin_v1";
+function getPin(){ return localStorage.getItem(PIN_KEY) || ""; }
+function setPin(p){ localStorage.setItem(PIN_KEY, p); }
 
-const sbUrl = document.getElementById("sbUrl");
-const sbAnon = document.getElementById("sbAnon");
-const pin = document.getElementById("pin");
-const connStatus = document.getElementById("connStatus");
-
-const monthInput = document.getElementById("month");
-monthInput.value = defaultMonth();
-
-let loadedMonthData = null; // lo que cargamos de la nube para ese mes
-
-function getConn(){
-  const url = sbUrl.value.trim();
-  const anon = sbAnon.value.trim();
-  const p = pin.value;
-  if(!url || !anon || !p) return null;
-  return { url, anon, pin: p };
+function ensurePin(){
+  const p = getPin();
+  if(!p) throw new Error("No hay PIN guardado. Escríbelo y pulsa Guardar PIN.");
+  if(p.length < 6) throw new Error("PIN demasiado corto (mínimo 6).");
+  return p;
 }
 
-function functionUrl(url){
-  // Supabase Edge Functions endpoint
-  return `${url.replace(/\/$/,"")}/functions/v1/finanzas`;
+/** ====== Llamadas a Edge Function ====== */
+function functionUrl(){
+  return `${SUPABASE_URL.replace(/\/$/,"")}/functions/v1/finanzas`;
 }
 
 async function apiCall(action, month, data=null){
-  const conn = getConn();
-  if(!conn) throw new Error("Falta Supabase URL / Anon key / PIN.");
-  const endpoint = functionUrl(conn.url);
-
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: {
+  const pin = ensurePin();
+  const res = await fetch(functionUrl(), {
+    method:"POST",
+    headers:{
       "Content-Type":"application/json",
-      "Authorization": `Bearer ${conn.anon}`,
-      "apikey": conn.anon
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      "apikey": SUPABASE_ANON_KEY
     },
-    body: JSON.stringify({ action, pin: conn.pin, month, data })
+    body: JSON.stringify({ action, pin, month, data })
   });
 
   const text = await res.text();
   let json = null;
-  try { json = JSON.parse(text); } catch { /* ignore */ }
+  try { json = JSON.parse(text); } catch {}
 
   if(!res.ok){
     const msg = (json && json.error) ? json.error : text || "Error desconocido";
@@ -240,8 +197,8 @@ function renderFixed(){
   }
 }
 
-/** ====== Render tarjetas ====== */
-function renderCardsForm(prefill=null){
+/** ====== Tarjetas ====== */
+function renderCardsForm(prefill){
   const wrap = document.getElementById("cardsForm");
   wrap.innerHTML = "";
 
@@ -278,15 +235,15 @@ function renderCardsForm(prefill=null){
   }
 }
 
-function collectCardsFromUI(){
+function collectCards(){
   const cards = {};
-  document.querySelectorAll(`input[data-card]`).forEach(inp => {
+  document.querySelectorAll("input[data-card]").forEach(inp=>{
     const name = inp.getAttribute("data-card");
     const num = Number(String(inp.value).replace(",", "."));
     cards[name] = cards[name] || {};
     cards[name].amount = isNaN(num) ? 0 : num;
   });
-  document.querySelectorAll(`select[data-paid]`).forEach(sel => {
+  document.querySelectorAll("select[data-paid]").forEach(sel=>{
     const name = sel.getAttribute("data-paid");
     cards[name] = cards[name] || {};
     cards[name].paid = sel.value === "si";
@@ -294,7 +251,10 @@ function collectCardsFromUI(){
   return cards;
 }
 
-function computeTotals(cards){
+function renderTotals(cards){
+  const totalsDiv = document.getElementById("totals");
+  totalsDiv.innerHTML = "";
+
   const fixedBy = {};
   for(const f of FIXED){
     const m = monthlyReal(f);
@@ -308,14 +268,6 @@ function computeTotals(cards){
   }
 
   const currencies = new Set([...Object.keys(fixedBy), ...Object.keys(cardsBy)]);
-  return { fixedBy, cardsBy, currencies };
-}
-
-function renderTotals(cards){
-  const totalsDiv = document.getElementById("totals");
-  totalsDiv.innerHTML = "";
-  const { fixedBy, cardsBy, currencies } = computeTotals(cards || {});
-
   for(const cur of currencies){
     const fixed = fixedBy[cur] || 0;
     const card = cardsBy[cur] || 0;
@@ -333,106 +285,65 @@ function renderTotals(cards){
   }
 }
 
-/** ====== Botones ====== */
-document.getElementById("saveConn").addEventListener("click", () => {
-  const conn = { url: sbUrl.value.trim(), anon: sbAnon.value.trim() };
-  saveConn(conn);
-  connStatus.textContent = "Conexión guardada en este dispositivo (solo URL y key).";
-  connStatus.className = "muted ok";
-});
+/** ====== UI ====== */
+const monthInput = document.getElementById("month");
+monthInput.value = defaultMonth();
 
-document.getElementById("clearConn").addEventListener("click", () => {
-  clearConn();
-  sbUrl.value = "";
-  sbAnon.value = "";
-  pin.value = "";
-  connStatus.textContent = "Borrado.";
-  connStatus.className = "muted";
+function setStatus(msg, ok=true){
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.className = ok ? "muted ok" : "muted bad";
+}
+
+document.getElementById("savePin").addEventListener("click", () => {
+  const p = (document.getElementById("pinInput").value || "").trim();
+  if(p.length < 6) { document.getElementById("pinStatus").textContent = "PIN demasiado corto (mínimo 6)."; return; }
+  setPin(p);
+  document.getElementById("pinInput").value = "";
+  document.getElementById("pinStatus").textContent = "PIN guardado en este dispositivo ✅";
 });
 
 document.getElementById("loadMonth").addEventListener("click", async () => {
   const m = monthInput.value || defaultMonth();
-  const saveStatus = document.getElementById("saveStatus");
-  saveStatus.textContent = "Cargando...";
-  saveStatus.className = "muted";
-
+  setStatus("Cargando...", true);
   try{
     const res = await apiCall("get", m, null);
-    loadedMonthData = res?.data || { month: m, cards: {} };
-    renderCardsForm(loadedMonthData);
-    renderTotals(loadedMonthData.cards || {});
-    document.getElementById("backupArea").value = JSON.stringify(loadedMonthData, null, 2);
-    saveStatus.textContent = "Mes cargado.";
-    saveStatus.className = "muted ok";
+    const data = res?.data || { month: m, cards: {} };
+    renderCardsForm(data);
+    renderTotals(data.cards || {});
+    setStatus("Mes cargado ✅", true);
   }catch(e){
-    loadedMonthData = { month: m, cards: {} };
-    renderCardsForm(loadedMonthData);
-    renderTotals(loadedMonthData.cards || {});
-    saveStatus.textContent = "No había datos para ese mes (o error). Puedes guardar y crearlo.";
-    saveStatus.className = "muted";
+    renderCardsForm({ month: m, cards: {} });
+    renderTotals({});
+    setStatus("No se pudo cargar (o no hay datos). Error: " + e.message, false);
   }
 });
 
 document.getElementById("saveCards").addEventListener("click", async () => {
   const m = monthInput.value || defaultMonth();
-  const saveStatus = document.getElementById("saveStatus");
-  saveStatus.textContent = "Guardando...";
-  saveStatus.className = "muted";
-
+  setStatus("Guardando...", true);
   try{
-    const cards = collectCardsFromUI();
-    const payload = { month: m, cards };
-    await apiCall("set", m, payload);
-    loadedMonthData = payload;
-    document.getElementById("backupArea").value = JSON.stringify(payload, null, 2);
+    const cards = collectCards();
+    await apiCall("set", m, { month: m, cards });
     renderTotals(cards);
-    saveStatus.textContent = "Guardado en la nube ✅";
-    saveStatus.className = "muted ok";
+    setStatus("Guardado en la nube ✅", true);
   }catch(e){
-    saveStatus.textContent = "Error: " + e.message;
-    saveStatus.className = "muted bad";
+    setStatus("Error al guardar: " + e.message, false);
   }
 });
 
 document.getElementById("resetCards").addEventListener("click", () => {
-  loadedMonthData = { month: monthInput.value || defaultMonth(), cards: {} };
-  renderCardsForm(loadedMonthData);
+  renderCardsForm({ month: monthInput.value || defaultMonth(), cards: {} });
   renderTotals({});
-  document.getElementById("saveStatus").textContent = "Reset hecho (no guardado).";
-  document.getElementById("saveStatus").className = "muted";
+  setStatus("Reset hecho (no guardado).", true);
 });
 
-document.getElementById("exportBtn").addEventListener("click", async () => {
-  const area = document.getElementById("backupArea");
-  const m = monthInput.value || defaultMonth();
-  // Exporta lo que esté cargado o lo que haya en pantalla
-  const cards = collectCardsFromUI();
-  const payload = { month: m, cards };
-  area.value = JSON.stringify(payload, null, 2);
-  await navigator.clipboard.writeText(area.value);
-  alert("JSON copiado.");
-});
-
-document.getElementById("importBtn").addEventListener("click", async () => {
-  const area = document.getElementById("backupArea");
-  let obj = null;
-  try { obj = JSON.parse(area.value); } catch { alert("JSON inválido."); return; }
-  if(!obj || !obj.month || !obj.cards){ alert("Formato inválido."); return; }
-  monthInput.value = obj.month;
-  renderCardsForm(obj);
-  renderTotals(obj.cards);
-  alert("Importado en pantalla. Ahora pulsa “Guardar en la nube”.");
-});
-
-/** ====== Init ====== */
-(function init(){
-  const c = loadConn();
-  if(c?.url) sbUrl.value = c.url;
-  if(c?.anon) sbAnon.value = c.anon;
-  renderFixed();
-  renderCardsForm({ month: monthInput.value, cards: {} });
-  renderTotals({});
-})();
+/** Init */
+renderFixed();
+renderCardsForm({ month: monthInput.value, cards: {} });
+renderTotals({});
+const existingPin = getPin();
+document.getElementById("pinStatus").textContent = existingPin ? "Este dispositivo ya tiene un PIN guardado ✅" : "No hay PIN guardado aún.";
 </script>
 </body>
 </html>
