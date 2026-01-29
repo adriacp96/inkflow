@@ -85,6 +85,42 @@
     .cal-info { border-top: 2px solid #000; margin-top: 8px; padding-top: 6px; font-size: 0.7rem; text-transform: uppercase; }
     
     .sticky-actions { position: sticky; bottom: 0; background: #fff; padding: 10px 0; border-top: 2px solid #000; display: flex; gap: 10px; z-index: 100; }
+
+    @media (prefers-color-scheme: dark) {
+      body { background: #000; color: #fff; }
+      h1, h2 { border-bottom-color: #fff; }
+      h2 { background: #fff; color: #000; }
+      .box { border-color: #fff; }
+      details.box[open] > summary { border-bottom-color: #fff; }
+      label { color: #fff; }
+      select, input, button {
+        border-color: #fff;
+        background: #000;
+        color: #fff;
+      }
+      button { background: #fff; color: #000; }
+      button.alt { background: #000; color: #fff; }
+      .btn-del { background: #fff; color: #000; }
+      .cur-btn, .square-btn, .day-btn { border-color: #fff; background: #000; color: #fff; }
+      .cur-btn.active, .square-btn.active, .day-btn.active { background: #fff; color: #000; }
+      .chip { border-color: #fff; }
+      .chart-row { border-color: #fff; }
+      .bar-bg { border-color: #fff; background: #000; }
+      .bar-fill { background: #fff; }
+      .bar-fill.min { background: repeating-linear-gradient(45deg, #fff, #fff 2px, #000 2px, #000 4px); }
+      .item-row { border-bottom-color: #fff; }
+      .fixed-category { border-top-color: #fff; }
+      .checkbox-row span { border-color: #fff; }
+      .checkbox-row input:checked + span { background: #fff; color: #000; }
+      .cal-day { border-color: #fff; background: #000; color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
+      .cal-day[data-intensity="1"] { background: #1f1f1f; color: #fff; }
+      .cal-day[data-intensity="2"] { background: #3f3f3f; color: #fff; }
+      .cal-day[data-intensity="3"] { background: #6b6b6b; color: #000; }
+      .cal-day[data-intensity="4"] { background: #b5b5b5; color: #000; }
+      .cal-day[data-intensity="5"] { background: #fff; color: #000; }
+      .cal-info { border-top-color: #fff; }
+      .sticky-actions { background: #000; border-top-color: #fff; }
+    }
   </style>
 </head>
 <body id="mainBody">
