@@ -51,8 +51,6 @@
     .square-btn.active { background: #000; color: #fff; }
     .square-btn.text-fit { width: auto; height: var(--ctrl-h); padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; }
     .chip { border: 2px solid #000; padding: 4px 6px; font-size: 0.65rem; text-transform: uppercase; }
-    .currency-chip { border: 2px solid #000; padding: 2px 6px; font-size: 0.55rem; margin-left: 4px; text-transform: uppercase; }
-    .currency-text { font-size: 0.6rem; text-transform: uppercase; margin-left: 4px; color: #666; }
     .expense-logo { height: 16px; width: auto; display: inline-block; }
     .expense-logo--mono { filter: grayscale(1) brightness(0); }
 
@@ -505,9 +503,7 @@ window.setCycle = setCycle;
 function formatCharge(f) {
   const monthLabel = f.dueMonth === "all" ? "Monthly" : (MONTHS[f.dueMonth] || f.dueMonth);
   const dayLabel = f.day ? `Day ${f.day}` : "Day ?";
-  const freq = parseInt(f.freq, 10) || 1;
-  const freqLabel = freq > 1 ? `Every ${freq} month${freq === 1 ? "" : "s"}` : "";
-  return [dayLabel, monthLabel, freqLabel].filter(Boolean).join(" · ");
+  return `${dayLabel} · ${monthLabel}`;
 }
 
 function renderExpenseName(name) {
@@ -520,7 +516,7 @@ function renderExpenseName(name) {
     return `<img class="expense-logo expense-logo--mono" src="assets/AppleOne.svg" alt="Apple One">`;
   }
   if (normalized === "youtubepremium" || normalized === "youtube premium") {
-    return `<img class="expense-logo expense-logo--mono" src="assets/YoutubePremium.png" alt="YouTube Premium">`;
+    return `<img class="expense-logo expense-logo--mono" src="assets/YouTubePremium.svg" alt="YouTube Premium">`;
   }
   if (normalized === "emiratesislamic" || normalized === "emirates islamic") {
     return `<img class="expense-logo expense-logo--mono" src="assets/EmiratesIslamic.svg" alt="Emirates Islamic">`;
@@ -546,9 +542,6 @@ function renderExpenseName(name) {
   if (normalized === "mashreq") {
     return `<img class="expense-logo expense-logo--mono" src="assets/Mashreq.png" alt="Mashreq">`;
   }
-  if (normalized === "realdebrid" || normalized === "real debrid") {
-    return `<img class="expense-logo expense-logo--mono" src="assets/RealDebrid.png" alt="Real Debrid">`;
-  }
   return trimmed || "—";
 }
 
@@ -565,48 +558,6 @@ function getPrevYearMonth(year, monthStr) {
   const m = parseInt(monthStr, 10);
   if (m === 1) return { year: year - 1, month: "12" };
   return { year, month: String(m - 1).padStart(2, "0") };
-}
-
-function getNextYearMonth(year, monthStr) {
-  const m = parseInt(monthStr, 10);
-  if (m === 12) return { year: year + 1, month: "01" };
-  return { year, month: String(m + 1).padStart(2, "0") };
-}
-
-function makeMonthKey(year, month) {
-  return `${year}-${String(month).padStart(2, "0")}`;
-}
-
-function getSelectedMonthKey() {
-  const { year, month } = getSelectedYearMonth();
-  return makeMonthKey(year, month);
-}
-
-function getNextMonthKeyFromKey(key) {
-  if (!key) return "";
-  const [year, month] = key.split("-");
-  const next = getNextYearMonth(parseInt(year, 10), month);
-  return makeMonthKey(next.year, next.month);
-}
-
-function ensureCardMonthFields(card, fallbackMonthKey) {
-  const current = fallbackMonthKey || getSelectedMonthKey();
-  if (!card.dueMonthKey) card.dueMonthKey = current;
-  if (!card.dataMonthKey) card.dataMonthKey = current;
-}
-
-function getVisibleCards() {
-  const currentKey = getSelectedMonthKey();
-  return cards.filter((card) => (card.dueMonthKey || currentKey) === currentKey);
-}
-
-function getCardSnapshotValues(card) {
-  const currentKey = getSelectedMonthKey();
-  const dataKey = card.dataMonthKey || currentKey;
-  if (dataKey !== currentKey) {
-    return prevMonthCardData[card.id] || { debt: 0, min: 0 };
-  }
-  return getMonthValues(card.id);
 }
 
 function getGlobalFixedKey() {
@@ -654,7 +605,6 @@ async function loadFromSupabase() {
     return;
   }
   fixedGasto = fixedData && Array.isArray(fixedData.fixed) ? fixedData.fixed : [];
-  const currentMonthKey = getSelectedMonthKey();
   if (fixedData && Array.isArray(fixedData.cards) && fixedData.cards.length) {
     cards = fixedData.cards;
   } else if (monthCards.length) {
@@ -666,7 +616,6 @@ async function loadFromSupabase() {
       cycle: c.cycle
     }));
   }
-  cards.forEach((card) => ensureCardMonthFields(card, currentMonthKey));
   cards.forEach(ensureCardId);
   monthCardData = buildMonthCardData(monthCards);
   categories = fixedData && Array.isArray(fixedData.categories) && fixedData.categories.length
@@ -737,7 +686,7 @@ function renderCharts() {
     }
   });
 
-  const paymentCards = getVisibleCards();
+  const paymentCards = cards;
 
   const out = [];
   CURRENCIES.forEach((cur) => {
@@ -745,7 +694,7 @@ function renderCharts() {
     let totalMinT = 0;
     paymentCards.forEach((c) => {
       if (c.currency !== cur) return;
-      const vals = getCardSnapshotValues(c);
+      const vals = c.cycle === "next" ? (prevMonthCardData[c.id] || { debt: 0, min: 0 }) : getMonthValues(c.id);
       totalDeudaT += num(vals.debt);
       totalMinT += num(vals.min);
     });
@@ -901,73 +850,70 @@ function renderCalendar() {
 }
 
 function renderCards() {
-  const currentCards = getVisibleCards();
-  const currentMonthKey = getSelectedMonthKey();
   const out = [];
-  currentCards.forEach((c) => {
-    const idx = cards.findIndex((card) => card.id === c.id);
-    if (idx === -1) return;
-    const vals = getCardSnapshotValues(c);
+  cards.forEach((c, i) => {
+    const vals = getMonthValues(c.id);
     const debtVal = num(vals.debt);
     const minVal = num(vals.min);
     const dayVal = parseInt(c.day, 10) || 1;
-    const cardLabel = renderExpenseName(c.name);
-    const currencyLabel = c.currency || '—';
+    const cycleVal = c.cycle === "next" ? "Next Month" : "This Month";
+    const isNext = c.cycle === "next";
     out.push(
-      `<div class="item-row">` +
-        `<button class="btn-del" onclick="deleteItem('card', ${idx})">X</button>` +
+      `<div class="item-row" style="${isNext ? 'opacity: 0.2' : ''}">` +
+        `<button class="btn-del" onclick="deleteItem('card', ${i})">X</button>` +
         `<div class="view-only">` +
-            `<div class="fixed-summary">` +
-              `<strong>${cardLabel}</strong>` +
-              `<span class="chip">Debt ${debtVal ? debtVal.toFixed(2) : "0.00"} ${currencyLabel}</span>` +
-              `<span class="chip">Min ${minVal ? minVal.toFixed(2) : "0.00"} ${currencyLabel}</span>` +
-              `<span class="chip">Day ${dayVal}</span>` +
-            `</div>` +
+          `<div class="fixed-summary">` +
+            `<strong>${c.name || '—'} (${c.currency || '—'})</strong>` +
+            `<span class="chip">Debt ${debtVal ? debtVal.toFixed(2) : "0.00"}</span>` +
+            `<span class="chip">Min ${minVal ? minVal.toFixed(2) : "0.00"}</span>` +
+            `<span class="chip">Day ${dayVal}</span>` +
+            `<span class="chip">${cycleVal}</span>` +
+          `</div>` +
         `</div>` +
         `<div class="edit-only">` +
           `<label>${c.name} (${c.currency})</label>` +
           `<div class="grid">` +
-            `<div><label>Total Debt</label><input type="number" step="0.01" value="${debtVal || ''}" oninput="updateCard(${idx}, 'debt', this.value)"></div>` +
-            `<div><label>Monthly Minimum</label><input type="number" step="0.01" value="${minVal || ''}" oninput="updateCard(${idx}, 'min', this.value)"></div>` +
+            `<div><label>Total Debt</label><input type="number" step="0.01" value="${debtVal || ''}" oninput="updateCard(${i}, 'debt', this.value)"></div>` +
+            `<div><label>Monthly Minimum</label><input type="number" step="0.01" value="${minVal || ''}" oninput="updateCard(${i}, 'min', this.value)"></div>` +
           `</div>` +
           `<label>Day of month</label>` +
           `<div class="day-grid">` +
-            `<button type="button" class="day-btn ${dayVal==1?'active':''}" onclick="updateCard(${idx}, 'day', 1)">1</button>` +
-            `<button type="button" class="day-btn ${dayVal==2?'active':''}" onclick="updateCard(${idx}, 'day', 2)">2</button>` +
-            `<button type="button" class="day-btn ${dayVal==3?'active':''}" onclick="updateCard(${idx}, 'day', 3)">3</button>` +
-            `<button type="button" class="day-btn ${dayVal==4?'active':''}" onclick="updateCard(${idx}, 'day', 4)">4</button>` +
-            `<button type="button" class="day-btn ${dayVal==5?'active':''}" onclick="updateCard(${idx}, 'day', 5)">5</button>` +
-            `<button type="button" class="day-btn ${dayVal==6?'active':''}" onclick="updateCard(${idx}, 'day', 6)">6</button>` +
-            `<button type="button" class="day-btn ${dayVal==7?'active':''}" onclick="updateCard(${idx}, 'day', 7)">7</button>` +
-            `<button type="button" class="day-btn ${dayVal==8?'active':''}" onclick="updateCard(${idx}, 'day', 8)">8</button>` +
-            `<button type="button" class="day-btn ${dayVal==9?'active':''}" onclick="updateCard(${idx}, 'day', 9)">9</button>` +
-            `<button type="button" class="day-btn ${dayVal==10?'active':''}" onclick="updateCard(${idx}, 'day', 10)">10</button>` +
-            `<button type="button" class="day-btn ${dayVal==11?'active':''}" onclick="updateCard(${idx}, 'day', 11)">11</button>` +
-            `<button type="button" class="day-btn ${dayVal==12?'active':''}" onclick="updateCard(${idx}, 'day', 12)">12</button>` +
-            `<button type="button" class="day-btn ${dayVal==13?'active':''}" onclick="updateCard(${idx}, 'day', 13)">13</button>` +
-            `<button type="button" class="day-btn ${dayVal==14?'active':''}" onclick="updateCard(${idx}, 'day', 14)">14</button>` +
-            `<button type="button" class="day-btn ${dayVal==15?'active':''}" onclick="updateCard(${idx}, 'day', 15)">15</button>` +
-            `<button type="button" class="day-btn ${dayVal==16?'active':''}" onclick="updateCard(${idx}, 'day', 16)">16</button>` +
-            `<button type="button" class="day-btn ${dayVal==17?'active':''}" onclick="updateCard(${idx}, 'day', 17)">17</button>` +
-            `<button type="button" class="day-btn ${dayVal==18?'active':''}" onclick="updateCard(${idx}, 'day', 18)">18</button>` +
-            `<button type="button" class="day-btn ${dayVal==19?'active':''}" onclick="updateCard(${idx}, 'day', 19)">19</button>` +
-            `<button type="button" class="day-btn ${dayVal==20?'active':''}" onclick="updateCard(${idx}, 'day', 20)">20</button>` +
-            `<button type="button" class="day-btn ${dayVal==21?'active':''}" onclick="updateCard(${idx}, 'day', 21)">21</button>` +
-            `<button type="button" class="day-btn ${dayVal==22?'active':''}" onclick="updateCard(${idx}, 'day', 22)">22</button>` +
-            `<button type="button" class="day-btn ${dayVal==23?'active':''}" onclick="updateCard(${idx}, 'day', 23)">23</button>` +
-            `<button type="button" class="day-btn ${dayVal==24?'active':''}" onclick="updateCard(${idx}, 'day', 24)">24</button>` +
-            `<button type="button" class="day-btn ${dayVal==25?'active':''}" onclick="updateCard(${idx}, 'day', 25)">25</button>` +
-            `<button type="button" class="day-btn ${dayVal==26?'active':''}" onclick="updateCard(${idx}, 'day', 26)">26</button>` +
-            `<button type="button" class="day-btn ${dayVal==27?'active':''}" onclick="updateCard(${idx}, 'day', 27)">27</button>` +
-            `<button type="button" class="day-btn ${dayVal==28?'active':''}" onclick="updateCard(${idx}, 'day', 28)">28</button>` +
-            `<button type="button" class="day-btn ${dayVal==29?'active':''}" onclick="updateCard(${idx}, 'day', 29)">29</button>` +
-            `<button type="button" class="day-btn ${dayVal==30?'active':''}" onclick="updateCard(${idx}, 'day', 30)">30</button>` +
-            `<button type="button" class="day-btn ${dayVal==31?'active':''}" onclick="updateCard(${idx}, 'day', 31)">31</button>` +
+            `<button type="button" class="day-btn ${dayVal==1?'active':''}" onclick="updateCard(${i}, 'day', 1)">1</button>` +
+            `<button type="button" class="day-btn ${dayVal==2?'active':''}" onclick="updateCard(${i}, 'day', 2)">2</button>` +
+            `<button type="button" class="day-btn ${dayVal==3?'active':''}" onclick="updateCard(${i}, 'day', 3)">3</button>` +
+            `<button type="button" class="day-btn ${dayVal==4?'active':''}" onclick="updateCard(${i}, 'day', 4)">4</button>` +
+            `<button type="button" class="day-btn ${dayVal==5?'active':''}" onclick="updateCard(${i}, 'day', 5)">5</button>` +
+            `<button type="button" class="day-btn ${dayVal==6?'active':''}" onclick="updateCard(${i}, 'day', 6)">6</button>` +
+            `<button type="button" class="day-btn ${dayVal==7?'active':''}" onclick="updateCard(${i}, 'day', 7)">7</button>` +
+            `<button type="button" class="day-btn ${dayVal==8?'active':''}" onclick="updateCard(${i}, 'day', 8)">8</button>` +
+            `<button type="button" class="day-btn ${dayVal==9?'active':''}" onclick="updateCard(${i}, 'day', 9)">9</button>` +
+            `<button type="button" class="day-btn ${dayVal==10?'active':''}" onclick="updateCard(${i}, 'day', 10)">10</button>` +
+            `<button type="button" class="day-btn ${dayVal==11?'active':''}" onclick="updateCard(${i}, 'day', 11)">11</button>` +
+            `<button type="button" class="day-btn ${dayVal==12?'active':''}" onclick="updateCard(${i}, 'day', 12)">12</button>` +
+            `<button type="button" class="day-btn ${dayVal==13?'active':''}" onclick="updateCard(${i}, 'day', 13)">13</button>` +
+            `<button type="button" class="day-btn ${dayVal==14?'active':''}" onclick="updateCard(${i}, 'day', 14)">14</button>` +
+            `<button type="button" class="day-btn ${dayVal==15?'active':''}" onclick="updateCard(${i}, 'day', 15)">15</button>` +
+            `<button type="button" class="day-btn ${dayVal==16?'active':''}" onclick="updateCard(${i}, 'day', 16)">16</button>` +
+            `<button type="button" class="day-btn ${dayVal==17?'active':''}" onclick="updateCard(${i}, 'day', 17)">17</button>` +
+            `<button type="button" class="day-btn ${dayVal==18?'active':''}" onclick="updateCard(${i}, 'day', 18)">18</button>` +
+            `<button type="button" class="day-btn ${dayVal==19?'active':''}" onclick="updateCard(${i}, 'day', 19)">19</button>` +
+            `<button type="button" class="day-btn ${dayVal==20?'active':''}" onclick="updateCard(${i}, 'day', 20)">20</button>` +
+            `<button type="button" class="day-btn ${dayVal==21?'active':''}" onclick="updateCard(${i}, 'day', 21)">21</button>` +
+            `<button type="button" class="day-btn ${dayVal==22?'active':''}" onclick="updateCard(${i}, 'day', 22)">22</button>` +
+            `<button type="button" class="day-btn ${dayVal==23?'active':''}" onclick="updateCard(${i}, 'day', 23)">23</button>` +
+            `<button type="button" class="day-btn ${dayVal==24?'active':''}" onclick="updateCard(${i}, 'day', 24)">24</button>` +
+            `<button type="button" class="day-btn ${dayVal==25?'active':''}" onclick="updateCard(${i}, 'day', 25)">25</button>` +
+            `<button type="button" class="day-btn ${dayVal==26?'active':''}" onclick="updateCard(${i}, 'day', 26)">26</button>` +
+            `<button type="button" class="day-btn ${dayVal==27?'active':''}" onclick="updateCard(${i}, 'day', 27)">27</button>` +
+            `<button type="button" class="day-btn ${dayVal==28?'active':''}" onclick="updateCard(${i}, 'day', 28)">28</button>` +
+            `<button type="button" class="day-btn ${dayVal==29?'active':''}" onclick="updateCard(${i}, 'day', 29)">29</button>` +
+            `<button type="button" class="day-btn ${dayVal==30?'active':''}" onclick="updateCard(${i}, 'day', 30)">30</button>` +
+            `<button type="button" class="day-btn ${dayVal==31?'active':''}" onclick="updateCard(${i}, 'day', 31)">31</button>` +
           `</div>` +
           `<label>Charge month</label>` +
           `<div class="btn-group">` +
-            `<button type="button" class="square-btn text-fit ${currentMonthKey === c.dueMonthKey ? 'active' : ''}" onclick="updateCard(${idx}, 'cycle', 'this')">This Month</button>` +
-            `<button type="button" class="square-btn text-fit ${currentMonthKey !== c.dueMonthKey ? 'active' : ''}" onclick="updateCard(${idx}, 'cycle', 'next')">Next Month</button>` +
+            `<button type="button" class="square-btn text-fit ${c.cycle!=='next'?'active':''}" onclick="updateCard(${i}, 'cycle', 'this')">This Month</button>` +
+            `<button type="button" class="square-btn text-fit ${c.cycle=='next'?'active':''}" onclick="updateCard(${i}, 'cycle', 'next')">Next Month</button>` +
           `</div>` +
         `</div>` +
       `</div>`
@@ -997,7 +943,6 @@ function renderFixed() {
     out.push(`<div class="fixed-category">${labels[cat] || cat}</div>`);
     groups[cat].forEach(({ f, i }) => {
       const isDue = f.dueMonth === "all" || f.dueMonth === selectedMonth;
-      const currencyLabel = f.currency || "—";
       const catButtons = categories.map((cat) =>
         `<button type="button" class="square-btn text-fit ${f.category==cat.key?'active':''}" onclick="updateFix(${i}, 'category', '${cat.key}')">${cat.label}</button>`
       ).join("");
@@ -1007,7 +952,8 @@ function renderFixed() {
           `<div class="view-only">` +
             `<div class="fixed-summary">` +
               `<strong>${renderExpenseName(f.name)}</strong>` +
-              `<span class="chip">${num(f.amount).toFixed(2)} ${currencyLabel}</span>` +
+              `<span class="chip">${num(f.amount).toFixed(2)}</span>` +
+              `<span class="chip">${f.currency || '—'}</span>` +
               `<span class="chip">${formatCharge(f)}</span>` +
             `</div>` +
           `</div>` +
@@ -1095,19 +1041,11 @@ window.updateCard = (i, fld, val) => {
   const card = cards[i];
   if (!card) return;
   ensureCardId(card);
-  const currentMonthKey = getSelectedMonthKey();
-  if (fld === 'day') {
-    card.day = parseInt(val, 10) || 1;
-  } else if (fld === 'cycle') {
-    card.cycle = val;
-    card.dataMonthKey = currentMonthKey;
-    card.dueMonthKey = val === 'next'
-      ? getNextMonthKeyFromKey(currentMonthKey)
-      : currentMonthKey;
-  } else {
+  if (fld === 'day') card.day = parseInt(val, 10) || 1;
+  else if (fld === 'cycle') card.cycle = val;
+  else {
     if (!monthCardData[card.id]) monthCardData[card.id] = { debt: 0, min: 0 };
     monthCardData[card.id][fld] = num(val);
-    card.dataMonthKey = currentMonthKey;
   }
   queueAutosave();
   if (fld === 'day' || fld === 'cycle') renderCards();
@@ -1128,19 +1066,12 @@ window.deleteItem = (type, i) => {
 dom.addCardBtn.addEventListener("click", () => {
   const n = dom.newCardName;
   if (!n.value) return;
-  const currentMonthKey = getSelectedMonthKey();
-  const cycleValue = dom.newCardCycle.value || "this";
-  const dueKey = cycleValue === "next"
-    ? getNextMonthKeyFromKey(currentMonthKey)
-    : currentMonthKey;
   const newCard = {
     id: makeCardId(),
     name: n.value,
     currency: dom.newCardCur.value,
     day: parseInt(dom.newCardDay.value, 10) || 1,
-    cycle: cycleValue,
-    dueMonthKey: dueKey,
-    dataMonthKey: currentMonthKey
+    cycle: dom.newCardCycle.value || "this"
   };
   cards.push(newCard);
   monthCardData[newCard.id] = { debt: 0, min: 0 };
