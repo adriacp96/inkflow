@@ -779,14 +779,15 @@ function renderCards() {
     const minVal = num(vals.min);
     const dayVal = parseInt(c.day, 10) || 1;
     const cycleVal = c.cycle === "next" ? "Next Month" : "This Month";
+    const isNext = c.cycle === "next";
     out.push(
-      `<div class="item-row">` +
+      `<div class="item-row" style="${isNext ? 'opacity: 0.2' : ''}">` +
         `<button class="btn-del" onclick="deleteItem('card', ${i})">X</button>` +
         `<div class="view-only">` +
           `<div class="fixed-summary">` +
             `<strong>${c.name || '—'} (${c.currency || '—'})</strong>` +
-            `<span class="chip">Debt ${debtVal ? debtVal.toFixed(2) : "0.00"} ${c.currency || ''}</span>` +
-            `<span class="chip">Min ${minVal ? minVal.toFixed(2) : "0.00"} ${c.currency || ''}</span>` +
+            `<span class="chip">Debt ${debtVal ? debtVal.toFixed(2) : "0.00"}</span>` +
+            `<span class="chip">Min ${minVal ? minVal.toFixed(2) : "0.00"}</span>` +
             `<span class="chip">Day ${dayVal}</span>` +
             `<span class="chip">${cycleVal}</span>` +
           `</div>` +
