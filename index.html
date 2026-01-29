@@ -95,6 +95,7 @@
     .cal-info { border-top: 2px solid #000; margin-top: 8px; padding-top: 6px; font-size: 0.7rem; text-transform: uppercase; }
     
     .sticky-actions { position: sticky; bottom: 0; background: #fff; padding: 10px 0; border-top: 2px solid #000; display: flex; gap: 10px; z-index: 100; }
+    .sticky-actions button { flex: 1; }
 
     @media (prefers-color-scheme: dark) {
       body { background: #000; color: #fff; }
@@ -317,7 +318,8 @@
   </div>
 
   <div class="sticky-actions">
-    <button class="alt" id="editToggle" style="flex: 1;">✎ Edit</button>
+    <button class="alt" id="editToggle">✎ Edit</button>
+    <button class="alt" id="refreshBtn">↺ Refresh</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -360,7 +362,8 @@ const dom = {
   fixMonth: document.getElementById("fixMonth"),
   fixDay: document.getElementById("fixDay"),
   addFixBtn: document.getElementById("addFixBtn"),
-  editToggle: document.getElementById("editToggle")
+  editToggle: document.getElementById("editToggle"),
+  refreshBtn: document.getElementById("refreshBtn")
 };
 
 const CURRENCIES = ["AED", "EUR", "IDR"];
@@ -1150,6 +1153,10 @@ function renderFixed() {
 dom.editToggle.addEventListener("click", function() {
   const isEditing = dom.mainBody.classList.toggle("editing");
   this.textContent = isEditing ? "✓ Save" : "✎ Edit";
+});
+
+dom.refreshBtn.addEventListener("click", () => {
+  window.location.reload();
 });
 
 window.updateFix = (i, fld, val) => {
