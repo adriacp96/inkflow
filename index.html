@@ -33,10 +33,9 @@
     .editing .btn-del { display: block; }
 
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; align-items: center; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; align-items: flex-start; }
     .field-stack { display: flex; flex-direction: column; gap: 4px; }
-    .field-stack label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    .field-inline label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.02em; }
+    .field-stack label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; }
 
     .checkbox-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
     .checkbox-row label { display: inline-flex; align-items: center; }
@@ -54,9 +53,10 @@
     .square-btn.active { background: #000; color: #fff; }
     .square-btn.text-fit { width: auto; height: var(--ctrl-h); padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; }
     .chip { border: 2px solid #000; padding: 4px 6px; font-size: 0.65rem; text-transform: uppercase; }
-    .month-grid { display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; height: var(--ctrl-h); align-items: center; flex: 1; }
-    .month-btn { flex: 1; min-width: 48px; border: 2px solid #000; background: #fff; color: #000; padding: 0; text-transform: uppercase; font-size: 0.75rem; font-weight: bold; cursor: pointer; height: 100%; }
-    .month-btn.active { background: #000; color: #fff; }
+    .month-pagination { display: flex; align-items: center; gap: 4px; width: calc(5 * var(--ctrl-h) + 24px); }
+    .month-grid { display: flex; gap: 6px; flex-wrap: nowrap; overflow: hidden; height: var(--ctrl-h); align-items: center; width: calc(3 * var(--ctrl-h) + 12px); transform: translateY(-2px); }
+    .month-btn, .month-arrow { flex: 0 0 var(--ctrl-h); width: var(--ctrl-h); height: var(--ctrl-h); border: 2px solid #000; background: #fff; color: #000; padding: 0; text-transform: uppercase; font-size: 0.75rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0; }
+    .month-btn.active, .month-arrow:focus-visible { background: #000; color: #fff; }
     .expense-logo { height: 16px; width: auto; display: inline-block; }
     .expense-logo--mono { filter: grayscale(1) brightness(0); }
 
@@ -144,7 +144,11 @@
       </div>
       <div class="field-stack">
         <label for="monthSelect">Month</label>
-        <div id="monthGrid" class="month-grid" role="group" aria-label="Month selection"></div>
+        <div class="month-pagination">
+          <button type="button" class="month-arrow" onclick="shiftMonth(-1)" aria-label="Previous month">‹</button>
+          <div id="monthGrid" class="month-grid" role="group" aria-label="Month selection"></div>
+          <button type="button" class="month-arrow" onclick="shiftMonth(1)" aria-label="Next month">›</button>
+        </div>
         <select id="monthSelect" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;border:0;" aria-hidden="true">
           <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
           <option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option>
@@ -363,6 +367,7 @@ const MONTHS = {
   "05": "May", "06": "Jun", "07": "Jul", "08": "Aug",
   "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec"
 };
+const MONTH_KEYS = Object.keys(MONTHS);
 
 const DEFAULT_CATEGORIES = [
   { key: "subscriptions", label: "Subscriptions" },
@@ -516,8 +521,14 @@ window.setCycle = setCycle;
 
 function renderMonthButtons() {
   if (!dom.monthGrid) return;
-  dom.monthGrid.innerHTML = Object.entries(MONTHS).map(([code, label]) => (
-    `<button type="button" class="month-btn" data-month="${code}" onclick="selectMonth('${code}')">${label}</button>`
+  const center = dom.monthSelect.value || MONTH_KEYS[0];
+  const centerIdx = MONTH_KEYS.indexOf(center);
+  const visible = [-1, 0, 1].map((offset) => {
+    const idx = (centerIdx + offset + MONTH_KEYS.length) % MONTH_KEYS.length;
+    return MONTH_KEYS[idx];
+  });
+  dom.monthGrid.innerHTML = visible.map((code) => (
+    `<button type="button" class="month-btn" data-month="${code}" onclick="selectMonth('${code}')">${MONTHS[code]}</button>`
   )).join("");
   updateMonthButtons();
 }
@@ -532,12 +543,20 @@ function updateMonthButtons() {
 function selectMonth(value) {
   if (!value || dom.monthSelect.value === value) return;
   dom.monthSelect.value = value;
-  updateMonthButtons();
+  renderMonthButtons();
   if (typeof window.onDateChange === "function") {
     window.onDateChange();
   }
 }
 window.selectMonth = selectMonth;
+
+function shiftMonth(delta) {
+  const current = dom.monthSelect.value || MONTH_KEYS[0];
+  const idx = MONTH_KEYS.indexOf(current);
+  const nextIdx = (idx + delta + MONTH_KEYS.length) % MONTH_KEYS.length;
+  selectMonth(MONTH_KEYS[nextIdx]);
+}
+window.shiftMonth = shiftMonth;
 
 function formatCharge(f) {
   const monthLabel = f.dueMonth === "all" ? "Monthly" : (MONTHS[f.dueMonth] || f.dueMonth);
