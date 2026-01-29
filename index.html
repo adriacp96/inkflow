@@ -934,7 +934,6 @@ function renderFixed() {
     groups[key].push({ f, i });
   });
 
--    const order = categories.map((c) => c.key).concat(["uncategorized"]);
   const order = categories.map((c) => c.key).concat(["uncategorized"]);
   const labels = categories.reduce((acc, c) => {
     acc[c.key] = c.label;
