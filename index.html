@@ -509,6 +509,36 @@ function formatCharge(f) {
 function renderExpenseName(name) {
   const trimmed = (name || "").trim();
   const normalized = trimmed.toLowerCase().replace(/\s+/g, "");
+  if (normalized === "netflix") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/Netflix.svg" alt="Netflix">`;
+  }
+  if (normalized === "appleone" || normalized === "apple one") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/AppleOne.svg" alt="Apple One">`;
+  }
+  if (normalized === "youtubepremium" || normalized === "youtube premium") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/YouTubePremium.svg" alt="YouTube Premium">`;
+  }
+  if (normalized === "emiratesislamic" || normalized === "emirates islamic") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/EmiratesIslamic.svg" alt="Emirates Islamic">`;
+  }
+  if (normalized === "emiratesnbd" || normalized === "emirates nbd") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/emiratesnbd.png" alt="Emirates NBD">`;
+  }
+  if (normalized === "tabby") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/tabby.png" alt="Tabby">`;
+  }
+  if (normalized === "amex" || normalized === "americanexpress" || normalized === "american express") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/amex.svg" alt="American Express">`;
+  }
+  if (normalized === "virgin") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/Virgin.svg" alt="Virgin">`;
+  }
+  if (normalized === "du") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/du.png" alt="du">`;
+  }
+  if (normalized === "formula1" || normalized === "f1") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/f1.png" alt="Formula 1">`;
+  }
   return trimmed || "—";
 }
 
