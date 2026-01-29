@@ -860,7 +860,7 @@ function renderCards() {
   };
 
   cards.forEach((c, i) => {
-    const vals = getMonthValues(c.id);
+    const vals = isNext ? (prevMonthCardData[c.id] || { debt: 0, min: 0 }) : getMonthValues(c.id);
     const debtVal = num(vals.debt);
     const minVal = num(vals.min);
     const dayVal = parseInt(c.day, 10) || 1;
