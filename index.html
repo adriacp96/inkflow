@@ -854,7 +854,11 @@ function renderCalendar() {
 }
 
 function renderCards() {
-  const out = [];
+  const sections = {
+    thisMonth: [],
+    nextMonth: []
+  };
+
   cards.forEach((c, i) => {
     const vals = getMonthValues(c.id);
     const debtVal = num(vals.debt);
@@ -863,18 +867,18 @@ function renderCards() {
     const cycleVal = c.cycle === "next" ? "Next Month" : "This Month";
     const isNext = c.cycle === "next";
     const cardLabel = renderExpenseName(c.name);
-    const currencyLabel = c.currency || '—';
-    out.push(
-      `<div class="item-row" style="${isNext ? 'opacity: 0.2' : ''}">` +
+    const currencyLabel = c.currency || "—";
+    const cardHtml =
+      `<div class="item-row">` +
         `<button class="btn-del" onclick="deleteItem('card', ${i})">X</button>` +
         `<div class="view-only">` +
-            `<div class="fixed-summary">` +
-              `<strong>${cardLabel}</strong>` +
-              `<span class="chip">Debt ${debtVal ? debtVal.toFixed(2) : "0.00"} ${currencyLabel}</span>` +
-              `<span class="chip">Min ${minVal ? minVal.toFixed(2) : "0.00"} ${currencyLabel}</span>` +
-              `<span class="chip">Day ${dayVal}</span>` +
-              `<span class="chip">${cycleVal}</span>` +
-            `</div>` +
+          `<div class="fixed-summary">` +
+            `<strong>${cardLabel}</strong>` +
+            `<span class="chip">Debt ${debtVal ? debtVal.toFixed(2) : "0.00"} ${currencyLabel}</span>` +
+            `<span class="chip">Min ${minVal ? minVal.toFixed(2) : "0.00"} ${currencyLabel}</span>` +
+            `<span class="chip">Day ${dayVal}</span>` +
+            `<span class="chip">${cycleVal}</span>` +
+          `</div>` +
         `</div>` +
         `<div class="edit-only">` +
           `<label>${c.name} (${c.currency})</label>` +
@@ -922,10 +926,42 @@ function renderCards() {
             `<button type="button" class="square-btn text-fit ${c.cycle=='next'?'active':''}" onclick="updateCard(${i}, 'cycle', 'next')">Next Month</button>` +
           `</div>` +
         `</div>` +
+      `</div>`;
+
+    if (isNext) {
+      sections.nextMonth.push(cardHtml);
+    } else {
+      sections.thisMonth.push(cardHtml);
+    }
+  });
+
+  const groups = [];
+  if (sections.thisMonth.length) {
+    groups.push(
+      `<div class="card-subsection">` +
+        `<div class="fixed-category">This Month</div>` +
+        `${sections.thisMonth.join("")}` +
       `</div>`
     );
-  });
-  dom.cardsList.innerHTML = out.join("");
+  } else {
+    groups.push(
+      `<div class="card-subsection">` +
+        `<div class="fixed-category">This Month</div>` +
+        `<div class="muted">No cards scheduled for this month.</div>` +
+      `</div>`
+    );
+  }
+
+  if (sections.nextMonth.length) {
+    groups.push(
+      `<div class="card-subsection">` +
+        `<div class="fixed-category">Next Month</div>` +
+        `${sections.nextMonth.join("")}` +
+      `</div>`
+    );
+  }
+
+  dom.cardsList.innerHTML = groups.join("");
 }
 
 function renderFixed() {
