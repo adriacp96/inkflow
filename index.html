@@ -585,9 +585,11 @@ function renderPreviousMonthCardsBox() {
     return (
       `<div class="item-row">` +
         `<div class="fixed-summary">` +
-          `<strong>${nameLabel} <span class="currency-text">${currencyLabel}</span></strong>` +
+          `<strong>${nameLabel}</strong>` +
           `<span class="chip">Debt ${debtVal ? debtVal.toFixed(2) : "0.00"}</span>` +
+          `<span class="chip">${currencyLabel}</span>` +
           `<span class="chip">Min ${minVal ? minVal.toFixed(2) : "0.00"}</span>` +
+          `<span class="chip">${currencyLabel}</span>` +
           `<span class="chip">Day ${dayLabel}</span>` +
           `<span class="chip">${cycleVal}</span>` +
         `</div>` +
@@ -908,6 +910,7 @@ function renderCards() {
     const dayVal = parseInt(c.day, 10) || 1;
     const cycleVal = c.cycle === "next" ? "Next Month" : "This Month";
     const isNext = c.cycle === "next";
+
     const cardLabel = renderExpenseName(c.name);
     const currencyLabel = c.currency || '—';
     out.push(
@@ -915,9 +918,11 @@ function renderCards() {
         `<button class="btn-del" onclick="deleteItem('card', ${i})">X</button>` +
         `<div class="view-only">` +
           `<div class="fixed-summary">` +
-            `<strong>${cardLabel} <span class="currency-text">${currencyLabel}</span></strong>` +
+            `<strong>${cardLabel}</strong>` +
             `<span class="chip">Debt ${debtVal ? debtVal.toFixed(2) : "0.00"}</span>` +
+            `<span class="chip">${currencyLabel}</span>` +
             `<span class="chip">Min ${minVal ? minVal.toFixed(2) : "0.00"}</span>` +
+            `<span class="chip">${currencyLabel}</span>` +
             `<span class="chip">Day ${dayVal}</span>` +
             `<span class="chip">${cycleVal}</span>` +
           `</div>` +
