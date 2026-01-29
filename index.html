@@ -1,0 +1,1137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>INKFLOW</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: serif; background: #fff; color: #000; margin: 0; padding: 15px; line-height: 1.2; }
+    :root { --ctrl-h: 44px; }
+    h1, h2 { font-family: sans-serif; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 4px; }
+    h1 { font-size: 1.3rem; margin-top: 0; }
+    h2 { font-size: 0.85rem; margin-top: 25px; background: #000; color: #fff; padding: 3px 6px; }
+
+    .section { margin-bottom: 25px; }
+    .box { border: 2px solid #000; padding: 10px; margin-bottom: 15px; }
+    details.box { padding: 0; }
+    details.box > summary { list-style: none; cursor: pointer; padding: 10px; font-weight: bold; text-transform: uppercase; font-size: 0.7rem; }
+    details.box > summary::-webkit-details-marker { display: none; }
+    details.box[open] > summary { border-bottom: 2px solid #000; }
+    details.box > .box-inner { padding: 10px; }
+    
+    label { display: block; font-size: 0.65rem; font-weight: bold; margin-bottom: 3px; text-transform: uppercase; }
+    select, input, button { 
+      width: 100%; height: var(--ctrl-h); padding: 0 10px; border: 2px solid #000; border-radius: 0; 
+      font-size: 0.95rem; background: #fff; margin-bottom: 8px; color: #000;
+      -webkit-appearance: none;
+    }
+    button { background: #000; color: #fff; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+    button.alt { background: #fff; color: #000; }
+    
+    .btn-del { display: none; width: auto; padding: 4px 10px; font-size: 0.8rem; float: right; margin: 0; background: #000; color: #fff; }
+    .editing .btn-del { display: block; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+    .checkbox-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
+    .checkbox-row label { display: inline-flex; align-items: center; }
+    .checkbox-row span { border: 2px solid #000; padding: 6px 10px; cursor: pointer; }
+    .checkbox-row input:checked + span { background: #000; color: #fff; }
+    .checkbox-row input { position: absolute; opacity: 0; pointer-events: none; }
+    .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+    .cur-btn { border: 2px solid #000; padding: 10px; background: #fff; color: #000; cursor: pointer; text-transform: uppercase; font-weight: bold; }
+    .cur-btn.active { background: #000; color: #fff; }
+    .currency-group { display: flex; align-items: center; }
+    .day-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+    .day-btn { border: 2px solid #000; width: 28px; height: 28px; padding: 0; background: #fff; color: #000; cursor: pointer; font-size: 0.7rem; line-height: 1; }
+    .day-btn.active { background: #000; color: #fff; }
+    .square-btn { border: 2px solid #000; width: var(--ctrl-h); height: var(--ctrl-h); padding: 0; background: #fff; color: #000; cursor: pointer; font-size: 0.7rem; text-transform: uppercase; font-weight: bold; }
+    .square-btn.active { background: #000; color: #fff; }
+    .square-btn.text-fit { width: auto; height: var(--ctrl-h); padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; }
+    .chip { border: 2px solid #000; padding: 4px 6px; font-size: 0.65rem; text-transform: uppercase; }
+    .currency-chip { border: 2px solid #000; padding: 2px 6px; font-size: 0.55rem; margin-left: 4px; text-transform: uppercase; }
+    .currency-text { font-size: 0.6rem; text-transform: uppercase; margin-left: 4px; color: #666; }
+    .expense-logo { height: 16px; width: auto; display: inline-block; }
+    .expense-logo--mono { filter: grayscale(1) brightness(0); }
+
+    .hidden { display: none; }
+
+    .chart-row { margin: 12px 0; border: 1px solid #000; padding: 8px; }
+    .bar-bg { border: 1px solid #000; height: 12px; width: 100%; background: #fff; margin: 4px 0; }
+    .bar-fill { background: #000; height: 100%; transition: width 0.3s; }
+    .bar-fill.min { background: repeating-linear-gradient(45deg, #000, #000 2px, #fff 2px, #fff 4px); }
+    .bar-label { display: flex; justify-content: space-between; font-size: 0.75rem; }
+
+    .item-row { border-bottom: 1px solid #000; padding: 10px 0; overflow: hidden; }
+    .muted { font-size: 0.6rem; font-style: italic; margin-top: 2px; }
+    .fixed-summary { display: flex; gap: 10px; align-items: center; font-size: 0.7rem; text-transform: uppercase; }
+    .fixed-summary strong { font-weight: 700; }
+    .fixed-category { margin-top: 12px; border-top: 2px solid #000; padding-top: 8px; font-size: 0.75rem; text-transform: uppercase; font-weight: bold; }
+    .inline-actions { display: flex; gap: 6px; }
+    .view-only { display: block; }
+    .edit-only { display: none; }
+    .editing .view-only { display: none; }
+    .editing .edit-only { display: block; }
+    .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 10px; }
+    .cal-head { font-size: 0.6rem; text-transform: uppercase; text-align: center; }
+    .cal-day { border: 2px solid #000; width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; background: #fff; }
+    .cal-day[data-intensity="1"] { background: #e5e5e5; }
+    .cal-day[data-intensity="2"] { background: #bfbfbf; }
+    .cal-day[data-intensity="3"] { background: #9a9a9a; color: #fff; }
+    .cal-day[data-intensity="4"] { background: #666; color: #fff; }
+    .cal-day[data-intensity="5"] { background: #000; color: #fff; }
+    .actual-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; align-items: start; }
+    .calendar { gap: 4px; margin-top: 0; }
+    .cal-day { font-size: 0.65rem; }
+    .cal-head { font-size: 0.55rem; }
+    .cal-info { border-top: 2px solid #000; margin-top: 8px; padding-top: 6px; font-size: 0.7rem; text-transform: uppercase; }
+    
+    .sticky-actions { position: sticky; bottom: 0; background: #fff; padding: 10px 0; border-top: 2px solid #000; display: flex; gap: 10px; z-index: 100; }
+
+    @media (prefers-color-scheme: dark) {
+      body { background: #000; color: #fff; }
+      h1, h2 { border-bottom-color: #fff; }
+      h2 { background: #fff; color: #000; }
+      .box { border-color: #fff; }
+      details.box[open] > summary { border-bottom-color: #fff; }
+      label { color: #fff; }
+      select, input, button {
+        border-color: #fff;
+        background: #000;
+        color: #fff;
+      }
+      button { background: #fff; color: #000; }
+      button.alt { background: #000; color: #fff; }
+      .btn-del { background: #fff; color: #000; }
+      .cur-btn, .square-btn, .day-btn { border-color: #fff; background: #000; color: #fff; }
+      .cur-btn.active, .square-btn.active, .day-btn.active { background: #fff; color: #000; }
+      .chip { border-color: #fff; }
+      .chart-row { border-color: #fff; }
+      .bar-bg { border-color: #fff; background: #000; }
+      .bar-fill { background: #fff; }
+      .bar-fill.min { background: repeating-linear-gradient(45deg, #fff, #fff 2px, #000 2px, #000 4px); }
+      .item-row { border-bottom-color: #fff; }
+      .fixed-category { border-top-color: #fff; }
+      .checkbox-row span { border-color: #fff; }
+      .checkbox-row input:checked + span { background: #fff; color: #000; }
+      .cal-day { border-color: #fff; background: #000; color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
+      .cal-day[data-intensity="1"] { background: #1f1f1f; color: #fff; }
+      .cal-day[data-intensity="2"] { background: #3f3f3f; color: #fff; }
+      .cal-day[data-intensity="3"] { background: #6b6b6b; color: #000; }
+      .cal-day[data-intensity="4"] { background: #b5b5b5; color: #000; }
+      .cal-day[data-intensity="5"] { background: #fff; color: #000; }
+      .cal-info { border-top-color: #fff; }
+      .sticky-actions { background: #000; border-top-color: #fff; }
+      .expense-logo--mono { filter: grayscale(1) brightness(0) invert(1); }
+    }
+  </style>
+</head>
+<body id="mainBody">
+
+  <h1>INKFLOW</h1>
+
+  <div class="section">
+    <div class="grid-3">
+      <div><label>Year</label><select id="yearSelect"></select></div>
+      <div><label>Month</label><select id="monthSelect" onchange="onDateChange()">
+        <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
+        <option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option>
+        <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
+        <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+      </select></div>
+      <div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Actual Payments</h2>
+    <div class="actual-grid">
+      <div id="chartsContainer"></div>
+      <div>
+        <div id="calendarContainer"></div>
+        <div id="calendarInfo" class="cal-info"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Cards</h2>
+    <div id="cardsList"></div>
+    <details class="box">
+      <summary>+ New Card</summary>
+      <div class="box-inner">
+        <input type="text" id="newCardName" placeholder="Card name" />
+        <div class="grid">
+          <div class="currency-group">
+            <input type="hidden" id="newCardCur" value="AED" />
+            <div class="btn-group" data-target="newCardCur">
+              <button type="button" class="square-btn active" data-value="AED" onclick="setCurrency('newCardCur', this.dataset.value)">AED</button>
+              <button type="button" class="square-btn" data-value="EUR" onclick="setCurrency('newCardCur', this.dataset.value)">EUR</button>
+              <button type="button" class="square-btn" data-value="IDR" onclick="setCurrency('newCardCur', this.dataset.value)">IDR</button>
+            </div>
+          </div>
+          <button class="alt" id="addCardBtn">Add</button>
+        </div>
+        <label>Day of month</label>
+        <input type="hidden" id="newCardDay" value="1" />
+        <div class="day-grid" id="newCardDayGrid">
+          <button type="button" class="day-btn active" onclick="setDay('newCardDay', 1)">1</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 2)">2</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 3)">3</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 4)">4</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 5)">5</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 6)">6</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 7)">7</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 8)">8</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 9)">9</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 10)">10</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 11)">11</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 12)">12</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 13)">13</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 14)">14</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 15)">15</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 16)">16</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 17)">17</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 18)">18</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 19)">19</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 20)">20</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 21)">21</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 22)">22</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 23)">23</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 24)">24</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 25)">25</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 26)">26</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 27)">27</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 28)">28</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 29)">29</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 30)">30</button>
+          <button type="button" class="day-btn" onclick="setDay('newCardDay', 31)">31</button>
+        </div>
+        <label>Charge month</label>
+        <input type="hidden" id="newCardCycle" value="this" />
+        <div class="btn-group">
+          <button type="button" class="square-btn text-fit active" onclick="setCycle('newCardCycle', 'this')">This Month</button>
+          <button type="button" class="square-btn text-fit" onclick="setCycle('newCardCycle', 'next')">Next Month</button>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="section">
+    <h2>Fixed Expenses</h2>
+    <div id="fixedList"></div>
+    <details class="box">
+      <summary>+ New Expense</summary>
+      <div class="box-inner">
+        <input type="text" id="fixName" placeholder="Description" />
+        <div class="grid">
+          <input type="number" id="fixAmt" step="0.01" placeholder="Amount" />
+          <div class="currency-group">
+            <input type="hidden" id="fixCur" value="AED" />
+            <div class="btn-group" data-target="fixCur">
+              <button type="button" class="square-btn active" data-value="AED" onclick="setCurrency('fixCur', this.dataset.value)">AED</button>
+              <button type="button" class="square-btn" data-value="EUR" onclick="setCurrency('fixCur', this.dataset.value)">EUR</button>
+              <button type="button" class="square-btn" data-value="IDR" onclick="setCurrency('fixCur', this.dataset.value)">IDR</button>
+            </div>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="currency-group">
+            <input type="hidden" id="fixCat" value="subscriptions" />
+            <div class="btn-group" id="fixCatButtons" data-target="fixCat"></div>
+          </div>
+          <div class="inline-actions">
+            <input type="text" id="newCatName" placeholder="New category" />
+            <button type="button" class="alt" id="addCatBtn">Add</button>
+          </div>
+        </div>
+        <div class="checkbox-row">
+          <label>
+            <input type="checkbox" id="checkFreq" onchange="toggleFreqOptions()" />
+            <span>Non-monthly payment</span>
+          </label>
+        </div>
+        <div id="extraOptions" class="hidden">
+          <div class="grid">
+            <div><label>Every (Months)</label><input type="number" id="fixFreq" min="1" step="1" value="6" /></div>
+            <div><label>Charge Month</label><select id="fixMonth"><option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option><option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option></select></div>
+          </div>
+        </div>
+        <label>Day of month</label>
+        <input type="hidden" id="fixDay" value="1" />
+        <div class="day-grid" id="fixDayGrid">
+          <button type="button" class="day-btn active" onclick="setDay('fixDay', 1)">1</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 2)">2</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 3)">3</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 4)">4</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 5)">5</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 6)">6</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 7)">7</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 8)">8</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 9)">9</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 10)">10</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 11)">11</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 12)">12</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 13)">13</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 14)">14</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 15)">15</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 16)">16</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 17)">17</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 18)">18</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 19)">19</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 20)">20</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 21)">21</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 22)">22</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 23)">23</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 24)">24</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 25)">25</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 26)">26</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 27)">27</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 28)">28</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 29)">29</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 30)">30</button>
+          <button type="button" class="day-btn" onclick="setDay('fixDay', 31)">31</button>
+        </div>
+        <button class="alt" id="addFixBtn">Add Expense</button>
+      </div>
+    </details>
+  </div>
+
+  <div class="sticky-actions">
+    <button class="alt" id="editToggle" style="flex: 1;">✎ Edit</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// The structure starts empty so you can enter your data
+let cards = [];
+let fixedGasto = [];
+let prevCards = [];
+let monthCardData = {};
+let prevMonthCardData = {};
+
+const SUPABASE_URL = "https://yienfdeekaqbvixmuabi.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpZW5mZGVla2FxYnZpeG11YWJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MTQwNDAsImV4cCI6MjA4NTE5MDA0MH0.nXq_GV34A4QpcWFJr0R2Za6t1OvJdduHyxEAiAmp72E";
+const supabaseClient = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const dom = {
+  mainBody: document.getElementById("mainBody"),
+  yearSelect: document.getElementById("yearSelect"),
+  monthSelect: document.getElementById("monthSelect"),
+  chartsContainer: document.getElementById("chartsContainer"),
+  calendarContainer: document.getElementById("calendarContainer"),
+  calendarInfo: document.getElementById("calendarInfo"),
+  cardsList: document.getElementById("cardsList"),
+  fixedList: document.getElementById("fixedList"),
+  newCardName: document.getElementById("newCardName"),
+  newCardCur: document.getElementById("newCardCur"),
+  newCardDay: document.getElementById("newCardDay"),
+  newCardCycle: document.getElementById("newCardCycle"),
+  addCardBtn: document.getElementById("addCardBtn"),
+  fixName: document.getElementById("fixName"),
+  fixAmt: document.getElementById("fixAmt"),
+  fixCur: document.getElementById("fixCur"),
+  fixCat: document.getElementById("fixCat"),
+  fixCatButtons: document.getElementById("fixCatButtons"),
+  newCatName: document.getElementById("newCatName"),
+  addCatBtn: document.getElementById("addCatBtn"),
+  checkFreq: document.getElementById("checkFreq"),
+  fixFreq: document.getElementById("fixFreq"),
+  fixMonth: document.getElementById("fixMonth"),
+  fixDay: document.getElementById("fixDay"),
+  addFixBtn: document.getElementById("addFixBtn"),
+  editToggle: document.getElementById("editToggle")
+};
+
+const CURRENCIES = ["AED", "EUR", "IDR"];
+const MONTHS = {
+  "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
+  "05": "May", "06": "Jun", "07": "Jul", "08": "Aug",
+  "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec"
+};
+
+const DEFAULT_CATEGORIES = [
+  { key: "subscriptions", label: "Subscriptions" },
+  { key: "utility_bills", label: "Utility Bills" },
+  { key: "loans", label: "Loans" },
+  { key: "insurance", label: "Insurance" }
+];
+
+let categories = DEFAULT_CATEGORIES;
+
+const num = (val) => {
+  const n = parseFloat(val);
+  return Number.isFinite(n) ? n : 0;
+};
+
+let cardIdCounter = 0;
+function makeCardId() {
+  cardIdCounter += 1;
+  return `card_${Date.now()}_${cardIdCounter}`;
+}
+
+function ensureCardId(card) {
+  if (!card.id) {
+    card.id = makeCardId();
+  }
+  return card.id;
+}
+
+function cardSignature(card) {
+  const name = (card.name || "").trim().toLowerCase();
+  const cur = (card.currency || "").trim().toLowerCase();
+  const day = String(card.day || 1);
+  return `${name}__${cur}__${day}`;
+}
+
+function buildMonthCardData(monthCards) {
+  const data = {};
+  const idBySig = {};
+  cards.forEach((c) => {
+    idBySig[cardSignature(c)] = c.id;
+  });
+  (monthCards || []).forEach((c) => {
+    const id = c.id || idBySig[cardSignature(c)];
+    if (!id) return;
+    data[id] = {
+      debt: num(c.debt),
+      min: num(c.min)
+    };
+  });
+  return data;
+}
+
+function getMonthValues(cardId) {
+  return monthCardData[cardId] || { debt: 0, min: 0 };
+}
+
+const isSupabaseConfigured = () => (
+  SUPABASE_URL.startsWith("https://") &&
+  !SUPABASE_URL.includes("YOUR_PROJECT") &&
+  SUPABASE_ANON_KEY &&
+  SUPABASE_ANON_KEY !== "YOUR_ANON_KEY" &&
+  !!supabaseClient
+);
+
+function toggleFreqOptions() {
+  const isChecked = dom.checkFreq.checked;
+  document.getElementById("extraOptions").classList.toggle("hidden", !isChecked);
+  if (!isChecked) {
+    dom.fixFreq.dataset.changed = "0";
+    dom.fixMonth.dataset.changed = "0";
+  }
+}
+
+function setCurrency(targetId, value) {
+  const input = document.getElementById(targetId);
+  if (!input) return;
+  input.value = value;
+  const group = input.closest(".currency-group");
+  const buttons = group ? group.querySelectorAll(".square-btn") : [];
+  buttons.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.value === value);
+  });
+}
+window.setCurrency = setCurrency;
+
+function setCategory(targetId, value) {
+  const input = document.getElementById(targetId);
+  if (!input) return;
+  input.value = value;
+  const group = input.closest(".currency-group");
+  const buttons = group ? group.querySelectorAll(".square-btn") : [];
+  buttons.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.value === value);
+  });
+}
+window.setCategory = setCategory;
+
+function slugifyCategory(label) {
+  return label.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+function renderCategoryButtons() {
+  if (!dom.fixCatButtons) return;
+  const current = dom.fixCat.value || (categories[0] && categories[0].key) || "subscriptions";
+  dom.fixCatButtons.innerHTML = categories.map((c) => {
+    const active = c.key === current ? "active" : "";
+    return `<button type="button" class="square-btn text-fit ${active}" data-value="${c.key}" onclick="setCategory('fixCat', this.dataset.value)">${c.label}</button>`;
+  }).join("");
+  dom.fixCat.value = current;
+}
+
+function addCategory(label) {
+  const trimmed = (label || "").trim();
+  if (!trimmed) return;
+  let key = slugifyCategory(trimmed);
+  if (!key) return;
+  let suffix = 1;
+  while (categories.some((c) => c.key === key)) {
+    key = `${slugifyCategory(trimmed)}_${suffix++}`;
+  }
+  categories.push({ key, label: trimmed });
+  renderCategoryButtons();
+  queueAutosave();
+  renderFixed();
+}
+
+function setDay(targetId, value) {
+  const input = document.getElementById(targetId);
+  if (!input) return;
+  input.value = String(value);
+  const grid = document.getElementById(`${targetId}Grid`);
+  const buttons = grid ? grid.querySelectorAll(".day-btn") : [];
+  buttons.forEach((btn) => {
+    btn.classList.toggle("active", parseInt(btn.textContent, 10) === value);
+  });
+}
+window.setDay = setDay;
+
+function setCycle(targetId, value) {
+  const input = document.getElementById(targetId);
+  if (!input) return;
+  input.value = value;
+  const group = input.parentElement;
+  const buttons = group ? group.querySelectorAll(".square-btn") : [];
+  buttons.forEach((btn) => {
+    const btnVal = btn.textContent.toLowerCase().includes("next") ? "next" : "this";
+    btn.classList.toggle("active", btnVal === value);
+  });
+}
+window.setCycle = setCycle;
+
+function formatCharge(f) {
+  const monthLabel = f.dueMonth === "all" ? "Monthly" : (MONTHS[f.dueMonth] || f.dueMonth);
+  const dayLabel = f.day ? `Day ${f.day}` : "Day ?";
+  return `${dayLabel} · ${monthLabel}`;
+}
+
+function renderExpenseName(name) {
+  const trimmed = (name || "").trim();
+  const normalized = trimmed.toLowerCase().replace(/\s+/g, "");
+  if (normalized === "netflix") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/Netflix.svg" alt="Netflix">`;
+  }
+  if (normalized === "appleone" || normalized === "apple one") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/AppleOne.svg" alt="Apple One">`;
+  }
+  if (normalized === "youtubepremium" || normalized === "youtube premium") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/YoutubePremium.png" alt="YouTube Premium">`;
+  }
+  if (normalized === "emiratesislamic" || normalized === "emirates islamic") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/EmiratesIslamic.svg" alt="Emirates Islamic">`;
+  }
+  if (normalized === "emiratesnbd" || normalized === "emirates nbd") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/emiratesnbd.png" alt="Emirates NBD">`;
+  }
+  if (normalized === "tabby") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/tabby.png" alt="Tabby">`;
+  }
+  if (normalized === "amex" || normalized === "americanexpress" || normalized === "american express") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/amex.svg" alt="American Express">`;
+  }
+  if (normalized === "virgin") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/Virgin.svg" alt="Virgin">`;
+  }
+  if (normalized === "du") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/du.png" alt="du">`;
+  }
+  if (normalized === "formula1" || normalized === "f1") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/f1.png" alt="Formula 1">`;
+  }
+  if (normalized === "realdebrid" || normalized === "real debrid") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/RealDebrid.png" alt="Real Debrid">`;
+  }
+  return trimmed || "—";
+}
+
+function refreshAll() { renderCards(); renderFixed(); renderCharts(); }
+
+function getSelectedYearMonth() {
+  return {
+    year: parseInt(dom.yearSelect.value, 10),
+    month: dom.monthSelect.value
+  };
+}
+
+function getPrevYearMonth(year, monthStr) {
+  const m = parseInt(monthStr, 10);
+  if (m === 1) return { year: year - 1, month: "12" };
+  return { year, month: String(m - 1).padStart(2, "0") };
+}
+
+function getGlobalFixedKey() {
+  return { year: 0, month: "all" };
+}
+
+async function loadFromSupabase() {
+  if (!isSupabaseConfigured()) return;
+  const { year, month } = getSelectedYearMonth();
+  const { data: monthData, error: monthError } = await supabaseClient
+    .from('fin_snapshots')
+    .select('cards,fixed')
+    .eq('year', year)
+    .eq('month', month)
+    .maybeSingle();
+  if (monthError) {
+    console.error("Supabase load error:", monthError);
+    return;
+  }
+  const monthCards = monthData && Array.isArray(monthData.cards) ? monthData.cards : [];
+
+  const prev = getPrevYearMonth(year, month);
+  const { data: prevData, error: prevError } = await supabaseClient
+    .from('fin_snapshots')
+    .select('cards')
+    .eq('year', prev.year)
+    .eq('month', prev.month)
+    .maybeSingle();
+  if (prevError) {
+    console.error("Supabase prev cards load error:", prevError);
+    return;
+  }
+  prevCards = prevData && Array.isArray(prevData.cards) ? prevData.cards : [];
+  prevMonthCardData = buildMonthCardData(prevCards);
+
+  const globalKey = getGlobalFixedKey();
+  const { data: fixedData, error: fixedError } = await supabaseClient
+    .from('fin_snapshots')
+    .select('fixed,categories,cards')
+    .eq('year', globalKey.year)
+    .eq('month', globalKey.month)
+    .maybeSingle();
+  if (fixedError) {
+    console.error("Supabase fixed load error:", fixedError);
+    return;
+  }
+  fixedGasto = fixedData && Array.isArray(fixedData.fixed) ? fixedData.fixed : [];
+  if (fixedData && Array.isArray(fixedData.cards) && fixedData.cards.length) {
+    cards = fixedData.cards;
+  } else if (monthCards.length) {
+    cards = monthCards.map((c) => ({
+      id: c.id,
+      name: c.name,
+      currency: c.currency,
+      day: c.day,
+      cycle: c.cycle
+    }));
+  }
+  cards.forEach(ensureCardId);
+  monthCardData = buildMonthCardData(monthCards);
+  categories = fixedData && Array.isArray(fixedData.categories) && fixedData.categories.length
+    ? fixedData.categories
+    : DEFAULT_CATEGORIES;
+  renderCategoryButtons();
+}
+
+async function saveToSupabase(showAlert = false) {
+  if (!isSupabaseConfigured()) {
+    if (showAlert) alert("Set SUPABASE_URL and SUPABASE_ANON_KEY first.");
+    return;
+  }
+  const { year, month } = getSelectedYearMonth();
+  const payload = {
+    year,
+    month,
+    cards: Object.entries(monthCardData).map(([id, vals]) => ({
+      id,
+      debt: num(vals.debt),
+      min: num(vals.min)
+    })),
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await supabaseClient
+    .from('fin_snapshots')
+    .upsert(payload, { onConflict: 'year,month' });
+  if (error) {
+    console.error("Supabase save error:", error);
+    if (showAlert) alert("Cloud save error. Check the console.");
+    return;
+  }
+  const globalKey = getGlobalFixedKey();
+  const fixedPayload = {
+    year: globalKey.year,
+    month: globalKey.month,
+    fixed: fixedGasto,
+    cards,
+    categories,
+    updated_at: new Date().toISOString()
+  };
+  const { error: fixedError } = await supabaseClient
+    .from('fin_snapshots')
+    .upsert(fixedPayload, { onConflict: 'year,month' });
+  if (fixedError) {
+    console.error("Supabase fixed save error:", fixedError);
+    if (showAlert) alert("Cloud save error. Check the console.");
+    return;
+  }
+  if (showAlert) alert("Saved to cloud.");
+}
+
+let autosaveTimer = null;
+function queueAutosave() {
+  if (!isSupabaseConfigured()) return;
+  if (autosaveTimer) clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => {
+    saveToSupabase(false);
+  }, 600);
+}
+
+function renderCharts() {
+  const selectedMonth = dom.monthSelect.value;
+  const fixedByCur = { AED: 0, EUR: 0, IDR: 0 };
+  fixedGasto.forEach((f) => {
+    if (f.dueMonth === "all" || f.dueMonth === selectedMonth) {
+      fixedByCur[f.currency] += num(f.amount);
+    }
+  });
+
+  const paymentCards = cards;
+
+  const out = [];
+  CURRENCIES.forEach((cur) => {
+    let totalDeudaT = 0;
+    let totalMinT = 0;
+    paymentCards.forEach((c) => {
+      if (c.currency !== cur) return;
+      const vals = c.cycle === "next" ? (prevMonthCardData[c.id] || { debt: 0, min: 0 }) : getMonthValues(c.id);
+      totalDeudaT += num(vals.debt);
+      totalMinT += num(vals.min);
+    });
+    const sumaTotal = fixedByCur[cur] + totalDeudaT;
+    const sumaPago = fixedByCur[cur] + totalMinT;
+    if (sumaTotal === 0) return;
+    const max = cur === "IDR" ? 5000 : (cur === "AED" ? 25000 : 8000);
+    const totalPct = Math.min((sumaTotal / max) * 100, 100);
+    const pagoPct = Math.min((sumaPago / max) * 100, 100);
+    out.push(
+      `<div class="chart-row">` +
+        `<div class="bar-label"><strong>${cur}</strong><span>Total debt: ${sumaTotal.toFixed(2)}</span></div>` +
+        `<div class="bar-bg"><div class="bar-fill" style="width:${totalPct}%"></div></div>` +
+        `<div class="bar-label"><span>Payment this month: ${sumaPago.toFixed(2)}</span></div>` +
+        `<div class="bar-bg"><div class="bar-fill min" style="width:${pagoPct}%"></div></div>` +
+      `</div>`
+    );
+  });
+  dom.chartsContainer.innerHTML = out.join("");
+  renderCalendar();
+}
+
+function renderCalendar() {
+  if (!dom.calendarContainer) return;
+  const { year, month } = getSelectedYearMonth();
+  const monthIdx = parseInt(month, 10) - 1;
+  const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+  const firstDayIndex = new Date(year, monthIdx, 1).getDay();
+  const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const chargesByDay = Array.from({ length: daysInMonth }, () => 0);
+  const chargesByCur = {
+    AED: Array.from({ length: daysInMonth }, () => 0),
+    EUR: Array.from({ length: daysInMonth }, () => 0),
+    IDR: Array.from({ length: daysInMonth }, () => 0)
+  };
+  const chargesByCurFixed = {
+    AED: Array.from({ length: daysInMonth }, () => 0),
+    EUR: Array.from({ length: daysInMonth }, () => 0),
+    IDR: Array.from({ length: daysInMonth }, () => 0)
+  };
+  const chargesByCurCard = {
+    AED: Array.from({ length: daysInMonth }, () => 0),
+    EUR: Array.from({ length: daysInMonth }, () => 0),
+    IDR: Array.from({ length: daysInMonth }, () => 0)
+  };
+  const descByCur = {
+    AED: Array.from({ length: daysInMonth }, () => []),
+    EUR: Array.from({ length: daysInMonth }, () => []),
+    IDR: Array.from({ length: daysInMonth }, () => [])
+  };
+
+  fixedGasto.forEach((f) => {
+    if (f.dueMonth !== "all" && f.dueMonth !== month) return;
+    const day = Math.min(Math.max(parseInt(f.day, 10) || 1, 1), daysInMonth);
+    const amt = num(f.amount);
+    chargesByDay[day - 1] += amt;
+    if (chargesByCur[f.currency]) chargesByCur[f.currency][day - 1] += amt;
+    if (chargesByCurFixed[f.currency]) chargesByCurFixed[f.currency][day - 1] += amt;
+    if (descByCur[f.currency]) {
+      const label = (f.name || "Expense").toUpperCase();
+      descByCur[f.currency][day - 1].push(label);
+    }
+  });
+
+  const paymentCards = cards;
+  paymentCards.forEach((c) => {
+    const day = Math.min(Math.max(parseInt(c.day, 10) || 1, 1), daysInMonth);
+    const vals = c.cycle === "next" ? (prevMonthCardData[c.id] || { debt: 0, min: 0 }) : getMonthValues(c.id);
+    const amt = num(vals.min);
+    chargesByDay[day - 1] += amt;
+    if (chargesByCur[c.currency]) chargesByCur[c.currency][day - 1] += amt;
+    if (chargesByCurCard[c.currency]) chargesByCurCard[c.currency][day - 1] += amt;
+    if (amt > 0 && descByCur[c.currency]) {
+      const label = `${(c.name || "CARD").toUpperCase()} MIN`;
+      descByCur[c.currency][day - 1].push(label);
+    }
+  });
+
+  const maxAmount = Math.max(1, ...chargesByDay);
+  const intensityFor = (amt) => {
+    if (amt <= 0) return 0;
+    const pct = amt / maxAmount;
+    if (pct >= 0.8) return 5;
+    if (pct >= 0.6) return 4;
+    if (pct >= 0.4) return 3;
+    if (pct >= 0.2) return 2;
+    return 1;
+  };
+
+  const head = `<div class="calendar">` +
+    weekday.map((d) => `<div class="cal-head">${d}</div>`).join("") +
+  `</div>`;
+
+  const grid = [];
+  for (let i = 0; i < firstDayIndex; i++) grid.push(`<div class="cal-day"></div>`);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const amt = chargesByDay[d - 1];
+    const intensity = intensityFor(amt);
+    grid.push(
+      `<div class="cal-day" data-intensity="${intensity}" data-day="${d}"` +
+      ` data-aed="${chargesByCur.AED[d - 1].toFixed(2)}"` +
+      ` data-eur="${chargesByCur.EUR[d - 1].toFixed(2)}"` +
+      ` data-idr="${chargesByCur.IDR[d - 1].toFixed(2)}">` +
+      `${d}</div>`
+    );
+  }
+
+  dom.calendarContainer.innerHTML = head + `<div class="calendar">${grid.join("")}</div>`;
+  if (dom.calendarInfo) {
+    dom.calendarInfo.textContent = "Tap a day to see total charges.";
+  }
+  dom.calendarContainer.querySelectorAll(".cal-day[data-day]").forEach((el) => {
+    el.addEventListener("click", () => {
+      if (!dom.calendarInfo) return;
+      const day = el.getAttribute("data-day");
+      const dayIdx = parseInt(day, 10) - 1;
+      const totalParts = [];
+      const fixedParts = [];
+      const cardParts = [];
+      const aed = chargesByCur.AED[dayIdx] || 0;
+      const eur = chargesByCur.EUR[dayIdx] || 0;
+      const idr = chargesByCur.IDR[dayIdx] || 0;
+      const aedFix = chargesByCurFixed.AED[dayIdx] || 0;
+      const eurFix = chargesByCurFixed.EUR[dayIdx] || 0;
+      const idrFix = chargesByCurFixed.IDR[dayIdx] || 0;
+      const aedCard = chargesByCurCard.AED[dayIdx] || 0;
+      const eurCard = chargesByCurCard.EUR[dayIdx] || 0;
+      const idrCard = chargesByCurCard.IDR[dayIdx] || 0;
+      if (aed > 0) totalParts.push(`${aed.toFixed(2)} AED`);
+      if (eur > 0) totalParts.push(`${eur.toFixed(2)} EUR`);
+      if (idr > 0) totalParts.push(`${idr.toFixed(2)} IDR`);
+      if (aedFix > 0) fixedParts.push(`${aedFix.toFixed(2)} AED`);
+      if (eurFix > 0) fixedParts.push(`${eurFix.toFixed(2)} EUR`);
+      if (idrFix > 0) fixedParts.push(`${idrFix.toFixed(2)} IDR`);
+      if (aedCard > 0) cardParts.push(`${aedCard.toFixed(2)} AED`);
+      if (eurCard > 0) cardParts.push(`${eurCard.toFixed(2)} EUR`);
+      if (idrCard > 0) cardParts.push(`${idrCard.toFixed(2)} IDR`);
+      const totalLine = totalParts.length ? `Total: ${totalParts.join(" · ")}` : "Total: 0";
+      const lines = [];
+      const aedDesc = descByCur.AED[dayIdx] || [];
+      const eurDesc = descByCur.EUR[dayIdx] || [];
+      const idrDesc = descByCur.IDR[dayIdx] || [];
+      aedDesc.forEach((desc) => lines.push(`AED: ${desc}`));
+      eurDesc.forEach((desc) => lines.push(`EUR: ${desc}`));
+      idrDesc.forEach((desc) => lines.push(`IDR: ${desc}`));
+      if (!lines.length) lines.push("No charges");
+      dom.calendarInfo.innerHTML =
+        `<div><strong>${totalLine}</strong></div>` +
+        lines.map((line) => `<div>${line}</div>`).join("");
+    });
+  });
+}
+
+function renderCards() {
+  const out = [];
+  cards.forEach((c, i) => {
+    const vals = getMonthValues(c.id);
+    const debtVal = num(vals.debt);
+    const minVal = num(vals.min);
+    const dayVal = parseInt(c.day, 10) || 1;
+    const cycleVal = c.cycle === "next" ? "Next Month" : "This Month";
+    const isNext = c.cycle === "next";
+    const cardLabel = renderExpenseName(c.name);
+    const currencyLabel = c.currency || '—';
+    out.push(
+      `<div class="item-row" style="${isNext ? 'opacity: 0.2' : ''}">` +
+        `<button class="btn-del" onclick="deleteItem('card', ${i})">X</button>` +
+        `<div class="view-only">` +
+          `<div class="fixed-summary">` +
+            `<strong>${cardLabel}</strong>` +
+            `<span class="chip">Debt ${debtVal ? debtVal.toFixed(2) : "0.00"}<span class="currency-chip">${currencyLabel}</span></span>` +
+            `<span class="chip">Min ${minVal ? minVal.toFixed(2) : "0.00"}<span class="currency-chip">${currencyLabel}</span></span>` +
+            `<span class="chip">Day ${dayVal}</span>` +
+            `<span class="chip">${cycleVal}</span>` +
+          `</div>` +
+        `</div>` +
+        `<div class="edit-only">` +
+          `<label>${c.name} (${c.currency})</label>` +
+          `<div class="grid">` +
+            `<div><label>Total Debt</label><input type="number" step="0.01" value="${debtVal || ''}" oninput="updateCard(${i}, 'debt', this.value)"></div>` +
+            `<div><label>Monthly Minimum</label><input type="number" step="0.01" value="${minVal || ''}" oninput="updateCard(${i}, 'min', this.value)"></div>` +
+          `</div>` +
+          `<label>Day of month</label>` +
+          `<div class="day-grid">` +
+            `<button type="button" class="day-btn ${dayVal==1?'active':''}" onclick="updateCard(${i}, 'day', 1)">1</button>` +
+            `<button type="button" class="day-btn ${dayVal==2?'active':''}" onclick="updateCard(${i}, 'day', 2)">2</button>` +
+            `<button type="button" class="day-btn ${dayVal==3?'active':''}" onclick="updateCard(${i}, 'day', 3)">3</button>` +
+            `<button type="button" class="day-btn ${dayVal==4?'active':''}" onclick="updateCard(${i}, 'day', 4)">4</button>` +
+            `<button type="button" class="day-btn ${dayVal==5?'active':''}" onclick="updateCard(${i}, 'day', 5)">5</button>` +
+            `<button type="button" class="day-btn ${dayVal==6?'active':''}" onclick="updateCard(${i}, 'day', 6)">6</button>` +
+            `<button type="button" class="day-btn ${dayVal==7?'active':''}" onclick="updateCard(${i}, 'day', 7)">7</button>` +
+            `<button type="button" class="day-btn ${dayVal==8?'active':''}" onclick="updateCard(${i}, 'day', 8)">8</button>` +
+            `<button type="button" class="day-btn ${dayVal==9?'active':''}" onclick="updateCard(${i}, 'day', 9)">9</button>` +
+            `<button type="button" class="day-btn ${dayVal==10?'active':''}" onclick="updateCard(${i}, 'day', 10)">10</button>` +
+            `<button type="button" class="day-btn ${dayVal==11?'active':''}" onclick="updateCard(${i}, 'day', 11)">11</button>` +
+            `<button type="button" class="day-btn ${dayVal==12?'active':''}" onclick="updateCard(${i}, 'day', 12)">12</button>` +
+            `<button type="button" class="day-btn ${dayVal==13?'active':''}" onclick="updateCard(${i}, 'day', 13)">13</button>` +
+            `<button type="button" class="day-btn ${dayVal==14?'active':''}" onclick="updateCard(${i}, 'day', 14)">14</button>` +
+            `<button type="button" class="day-btn ${dayVal==15?'active':''}" onclick="updateCard(${i}, 'day', 15)">15</button>` +
+            `<button type="button" class="day-btn ${dayVal==16?'active':''}" onclick="updateCard(${i}, 'day', 16)">16</button>` +
+            `<button type="button" class="day-btn ${dayVal==17?'active':''}" onclick="updateCard(${i}, 'day', 17)">17</button>` +
+            `<button type="button" class="day-btn ${dayVal==18?'active':''}" onclick="updateCard(${i}, 'day', 18)">18</button>` +
+            `<button type="button" class="day-btn ${dayVal==19?'active':''}" onclick="updateCard(${i}, 'day', 19)">19</button>` +
+            `<button type="button" class="day-btn ${dayVal==20?'active':''}" onclick="updateCard(${i}, 'day', 20)">20</button>` +
+            `<button type="button" class="day-btn ${dayVal==21?'active':''}" onclick="updateCard(${i}, 'day', 21)">21</button>` +
+            `<button type="button" class="day-btn ${dayVal==22?'active':''}" onclick="updateCard(${i}, 'day', 22)">22</button>` +
+            `<button type="button" class="day-btn ${dayVal==23?'active':''}" onclick="updateCard(${i}, 'day', 23)">23</button>` +
+            `<button type="button" class="day-btn ${dayVal==24?'active':''}" onclick="updateCard(${i}, 'day', 24)">24</button>` +
+            `<button type="button" class="day-btn ${dayVal==25?'active':''}" onclick="updateCard(${i}, 'day', 25)">25</button>` +
+            `<button type="button" class="day-btn ${dayVal==26?'active':''}" onclick="updateCard(${i}, 'day', 26)">26</button>` +
+            `<button type="button" class="day-btn ${dayVal==27?'active':''}" onclick="updateCard(${i}, 'day', 27)">27</button>` +
+            `<button type="button" class="day-btn ${dayVal==28?'active':''}" onclick="updateCard(${i}, 'day', 28)">28</button>` +
+            `<button type="button" class="day-btn ${dayVal==29?'active':''}" onclick="updateCard(${i}, 'day', 29)">29</button>` +
+            `<button type="button" class="day-btn ${dayVal==30?'active':''}" onclick="updateCard(${i}, 'day', 30)">30</button>` +
+            `<button type="button" class="day-btn ${dayVal==31?'active':''}" onclick="updateCard(${i}, 'day', 31)">31</button>` +
+          `</div>` +
+          `<label>Charge month</label>` +
+          `<div class="btn-group">` +
+            `<button type="button" class="square-btn text-fit ${c.cycle!=='next'?'active':''}" onclick="updateCard(${i}, 'cycle', 'this')">This Month</button>` +
+            `<button type="button" class="square-btn text-fit ${c.cycle=='next'?'active':''}" onclick="updateCard(${i}, 'cycle', 'next')">Next Month</button>` +
+          `</div>` +
+        `</div>` +
+      `</div>`
+    );
+  });
+  dom.cardsList.innerHTML = out.join("");
+}
+
+function renderFixed() {
+  const selectedMonth = dom.monthSelect.value;
+  const groups = {};
+  fixedGasto.forEach((f, i) => {
+    const key = f.category || "uncategorized";
+    if (!groups[key]) groups[key] = [];
+    groups[key].push({ f, i });
+  });
+
+  const order = categories.map((c) => c.key).concat(["uncategorized"]);
+  const labels = categories.reduce((acc, c) => {
+    acc[c.key] = c.label;
+    return acc;
+  }, { uncategorized: "Uncategorized" });
+
+  const out = [];
+  order.forEach((cat) => {
+    if (!groups[cat] || groups[cat].length === 0) return;
+    out.push(`<div class="fixed-category">${labels[cat] || cat}</div>`);
+    groups[cat].forEach(({ f, i }) => {
+      const isDue = f.dueMonth === "all" || f.dueMonth === selectedMonth;
+      const currencyLabel = f.currency || "—";
+      const catButtons = categories.map((cat) =>
+        `<button type="button" class="square-btn text-fit ${f.category==cat.key?'active':''}" onclick="updateFix(${i}, 'category', '${cat.key}')">${cat.label}</button>`
+      ).join("");
+      out.push(
+        `<div class="item-row" style="${!isDue ? 'opacity: 0.2' : ''}">` +
+          `<button class="btn-del" onclick="deleteItem('fix', ${i})">X</button>` +
+          `<div class="view-only">` +
+            `<div class="fixed-summary">` +
+              `<strong>${renderExpenseName(f.name)}</strong>` +
+              `<span class="chip">${num(f.amount).toFixed(2)} ${currencyLabel}</span>` +
+              `<span class="chip">${formatCharge(f)}</span>` +
+            `</div>` +
+          `</div>` +
+          `<div class="edit-only">` +
+            `<div class="grid">` +
+              `<input type="text" value="${f.name}" onchange="updateFix(${i}, 'name', this.value)" />` +
+              `<div class="currency-group">` +
+                `<div class="btn-group">` +
+                  `<button type="button" class="square-btn ${f.currency=='AED'?'active':''}" onclick="updateFix(${i}, 'currency', 'AED')">AED</button>` +
+                  `<button type="button" class="square-btn ${f.currency=='EUR'?'active':''}" onclick="updateFix(${i}, 'currency', 'EUR')">EUR</button>` +
+                  `<button type="button" class="square-btn ${f.currency=='IDR'?'active':''}" onclick="updateFix(${i}, 'currency', 'IDR')">IDR</button>` +
+                `</div>` +
+              `</div>` +
+            `</div>` +
+            `<div class="grid-3">` +
+              `<div><label>Amount</label><input type="number" step="0.01" value="${f.amount}" onchange="updateFix(${i}, 'amount', this.value)" /></div>` +
+              `<div><label>Day</label><div class="day-grid">` +
+                `<button type="button" class="day-btn ${f.day==1?'active':''}" onclick="updateFix(${i}, 'day', 1)">1</button>` +
+                `<button type="button" class="day-btn ${f.day==2?'active':''}" onclick="updateFix(${i}, 'day', 2)">2</button>` +
+                `<button type="button" class="day-btn ${f.day==3?'active':''}" onclick="updateFix(${i}, 'day', 3)">3</button>` +
+                `<button type="button" class="day-btn ${f.day==4?'active':''}" onclick="updateFix(${i}, 'day', 4)">4</button>` +
+                `<button type="button" class="day-btn ${f.day==5?'active':''}" onclick="updateFix(${i}, 'day', 5)">5</button>` +
+                `<button type="button" class="day-btn ${f.day==6?'active':''}" onclick="updateFix(${i}, 'day', 6)">6</button>` +
+                `<button type="button" class="day-btn ${f.day==7?'active':''}" onclick="updateFix(${i}, 'day', 7)">7</button>` +
+                `<button type="button" class="day-btn ${f.day==8?'active':''}" onclick="updateFix(${i}, 'day', 8)">8</button>` +
+                `<button type="button" class="day-btn ${f.day==9?'active':''}" onclick="updateFix(${i}, 'day', 9)">9</button>` +
+                `<button type="button" class="day-btn ${f.day==10?'active':''}" onclick="updateFix(${i}, 'day', 10)">10</button>` +
+                `<button type="button" class="day-btn ${f.day==11?'active':''}" onclick="updateFix(${i}, 'day', 11)">11</button>` +
+                `<button type="button" class="day-btn ${f.day==12?'active':''}" onclick="updateFix(${i}, 'day', 12)">12</button>` +
+                `<button type="button" class="day-btn ${f.day==13?'active':''}" onclick="updateFix(${i}, 'day', 13)">13</button>` +
+                `<button type="button" class="day-btn ${f.day==14?'active':''}" onclick="updateFix(${i}, 'day', 14)">14</button>` +
+                `<button type="button" class="day-btn ${f.day==15?'active':''}" onclick="updateFix(${i}, 'day', 15)">15</button>` +
+                `<button type="button" class="day-btn ${f.day==16?'active':''}" onclick="updateFix(${i}, 'day', 16)">16</button>` +
+                `<button type="button" class="day-btn ${f.day==17?'active':''}" onclick="updateFix(${i}, 'day', 17)">17</button>` +
+                `<button type="button" class="day-btn ${f.day==18?'active':''}" onclick="updateFix(${i}, 'day', 18)">18</button>` +
+                `<button type="button" class="day-btn ${f.day==19?'active':''}" onclick="updateFix(${i}, 'day', 19)">19</button>` +
+                `<button type="button" class="day-btn ${f.day==20?'active':''}" onclick="updateFix(${i}, 'day', 20)">20</button>` +
+                `<button type="button" class="day-btn ${f.day==21?'active':''}" onclick="updateFix(${i}, 'day', 21)">21</button>` +
+                `<button type="button" class="day-btn ${f.day==22?'active':''}" onclick="updateFix(${i}, 'day', 22)">22</button>` +
+                `<button type="button" class="day-btn ${f.day==23?'active':''}" onclick="updateFix(${i}, 'day', 23)">23</button>` +
+                `<button type="button" class="day-btn ${f.day==24?'active':''}" onclick="updateFix(${i}, 'day', 24)">24</button>` +
+                `<button type="button" class="day-btn ${f.day==25?'active':''}" onclick="updateFix(${i}, 'day', 25)">25</button>` +
+                `<button type="button" class="day-btn ${f.day==26?'active':''}" onclick="updateFix(${i}, 'day', 26)">26</button>` +
+                `<button type="button" class="day-btn ${f.day==27?'active':''}" onclick="updateFix(${i}, 'day', 27)">27</button>` +
+                `<button type="button" class="day-btn ${f.day==28?'active':''}" onclick="updateFix(${i}, 'day', 28)">28</button>` +
+                `<button type="button" class="day-btn ${f.day==29?'active':''}" onclick="updateFix(${i}, 'day', 29)">29</button>` +
+                `<button type="button" class="day-btn ${f.day==30?'active':''}" onclick="updateFix(${i}, 'day', 30)">30</button>` +
+                `<button type="button" class="day-btn ${f.day==31?'active':''}" onclick="updateFix(${i}, 'day', 31)">31</button>` +
+              `</div></div>` +
+              `<div><label>Charge</label><select onchange="updateFix(${i}, 'dueMonth', this.value)"><option value="all" ${f.dueMonth=='all'?'selected':''}>Month</option><option value="01" ${f.dueMonth=='01'?'selected':''}>Jan</option><option value="02" ${f.dueMonth=='02'?'selected':''}>Feb</option><option value="03" ${f.dueMonth=='03'?'selected':''}>Mar</option><option value="04" ${f.dueMonth=='04'?'selected':''}>Apr</option><option value="05" ${f.dueMonth=='05'?'selected':''}>May</option><option value="06" ${f.dueMonth=='06'?'selected':''}>Jun</option><option value="07" ${f.dueMonth=='07'?'selected':''}>Jul</option><option value="08" ${f.dueMonth=='08'?'selected':''}>Aug</option><option value="09" ${f.dueMonth=='09'?'selected':''}>Sep</option><option value="10" ${f.dueMonth=='10'?'selected':''}>Oct</option><option value="11" ${f.dueMonth=='11'?'selected':''}>Nov</option><option value="12" ${f.dueMonth=='12'?'selected':''}>Dec</option></select></div>` +
+            `</div>` +
+            `<div class="grid">` +
+              `<div><label>Every (Months)</label><input type="number" min="1" step="1" value="${parseInt(f.freq, 10) || 1}" onchange="updateFix(${i}, 'freq', this.value)" /></div>` +
+              `<div></div>` +
+            `</div>` +
+            `<div class="grid">` +
+              `<div><label>Category</label>` +
+                `<div class="btn-group">` +
+                  `${catButtons}` +
+                `</div>` +
+              `</div>` +
+              `<div></div>` +
+            `</div>` +
+          `</div>` +
+        `</div>`
+      );
+    });
+  });
+  dom.fixedList.innerHTML = out.join("");
+  renderCharts();
+}
+
+dom.editToggle.addEventListener("click", function() {
+  const isEditing = dom.mainBody.classList.toggle("editing");
+  this.textContent = isEditing ? "✓ Save" : "✎ Edit";
+});
+
+window.updateFix = (i, fld, val) => {
+  fixedGasto[i][fld] = (fld === 'amount' || fld === 'day' || fld === 'freq') ? num(val) : val;
+  queueAutosave();
+  renderFixed();
+};
+
+window.updateCard = (i, fld, val) => {
+  const card = cards[i];
+  if (!card) return;
+  ensureCardId(card);
+  if (fld === 'day') card.day = parseInt(val, 10) || 1;
+  else if (fld === 'cycle') card.cycle = val;
+  else {
+    if (!monthCardData[card.id]) monthCardData[card.id] = { debt: 0, min: 0 };
+    monthCardData[card.id][fld] = num(val);
+  }
+  queueAutosave();
+  if (fld === 'day' || fld === 'cycle') renderCards();
+  else renderCharts();
+};
+
+window.deleteItem = (type, i) => {
+  if (!confirm("Delete?")) return;
+  if (type === 'card') {
+    const removed = cards.splice(i, 1)[0];
+    if (removed && removed.id) delete monthCardData[removed.id];
+  }
+  else fixedGasto.splice(i, 1);
+  queueAutosave();
+  refreshAll();
+};
+
+dom.addCardBtn.addEventListener("click", () => {
+  const n = dom.newCardName;
+  if (!n.value) return;
+  const newCard = {
+    id: makeCardId(),
+    name: n.value,
+    currency: dom.newCardCur.value,
+    day: parseInt(dom.newCardDay.value, 10) || 1,
+    cycle: dom.newCardCycle.value || "this"
+  };
+  cards.push(newCard);
+  monthCardData[newCard.id] = { debt: 0, min: 0 };
+  n.value = "";
+  queueAutosave();
+  renderCards();
+});
+
+dom.addFixBtn.addEventListener("click", () => {
+  const name = dom.fixName.value;
+  const amt = num(dom.fixAmt.value);
+  const isFreq = dom.checkFreq.checked;
+  if(!name || !amt) return;
+  const hasNonMonthly = isFreq && (dom.fixFreq.dataset.changed === "1" || dom.fixMonth.dataset.changed === "1");
+  if (!dom.fixCat.value) {
+    dom.fixCat.value = categories[0] ? categories[0].key : "subscriptions";
+  }
+  fixedGasto.push({
+    name,
+    amount: amt,
+    currency: dom.fixCur.value,
+    category: dom.fixCat.value,
+    day: parseInt(dom.fixDay.value, 10) || 1,
+    freq: hasNonMonthly ? parseInt(dom.fixFreq.value, 10) : 1,
+    dueMonth: hasNonMonthly ? dom.fixMonth.value : "all"
+  });
+  dom.fixName.value = "";
+  dom.fixAmt.value = "";
+  dom.newCatName.value = "";
+  dom.fixFreq.dataset.changed = "0";
+  dom.fixMonth.dataset.changed = "0";
+  queueAutosave();
+  renderFixed();
+});
+
+const now = new Date();
+for (let y = now.getFullYear(); y <= now.getFullYear() + 5; y++) {
+  dom.yearSelect.add(new Option(y, y, y === now.getFullYear()));
+}
+dom.monthSelect.value = String(now.getMonth()+1).padStart(2,'0');
+dom.fixFreq.dataset.changed = "0";
+dom.fixMonth.dataset.changed = "0";
+dom.fixFreq.addEventListener("change", () => { dom.fixFreq.dataset.changed = "1"; });
+dom.fixMonth.addEventListener("change", () => { dom.fixMonth.dataset.changed = "1"; });
+renderCategoryButtons();
+dom.addCatBtn.addEventListener("click", () => {
+  addCategory(dom.newCatName.value);
+  dom.newCatName.value = "";
+});
+window.onDateChange = async () => {
+  await loadFromSupabase();
+  refreshAll();
+};
+dom.yearSelect.addEventListener("change", window.onDateChange);
+dom.monthSelect.addEventListener("change", window.onDateChange);
+window.onDateChange();
+</script>
+</body>
+</html>
