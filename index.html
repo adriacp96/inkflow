@@ -384,10 +384,10 @@ function cardSignature(card) {
   return `${name}__${cur}__${day}`;
 }
 
-function buildMonthCardData(monthCards) {
+function buildMonthCardData(monthCards, referenceCards = cards) {
   const data = {};
   const idBySig = {};
-  cards.forEach((c) => {
+  referenceCards.forEach((c) => {
     idBySig[cardSignature(c)] = c.id;
   });
   (monthCards || []).forEach((c) => {
@@ -516,7 +516,7 @@ function renderExpenseName(name) {
     return `<img class="expense-logo expense-logo--mono" src="assets/AppleOne.svg" alt="Apple One">`;
   }
   if (normalized === "youtubepremium" || normalized === "youtube premium") {
-    return `<img class="expense-logo expense-logo--mono" src="assets/YouTubePremium.svg" alt="YouTube Premium">`;
+    return `<img class="expense-logo expense-logo--mono" src="assets/YoutubePremium.png" alt="YouTube Premium">`;
   }
   if (normalized === "emiratesislamic" || normalized === "emirates islamic") {
     return `<img class="expense-logo expense-logo--mono" src="assets/EmiratesIslamic.svg" alt="Emirates Islamic">`;
@@ -560,6 +560,40 @@ function getPrevYearMonth(year, monthStr) {
   return { year, month: String(m - 1).padStart(2, "0") };
 }
 
+function renderPreviousMonthCardsBox() {
+  if (!prevCards.length) return "";
+  const { year, month } = getSelectedYearMonth();
+  const prev = getPrevYearMonth(year, month);
+  const headerLabel = `${MONTHS[prev.month] || prev.month} ${prev.year}`;
+  const rows = prevCards.map((c) => {
+    const vals = prevMonthCardData[c.id] || { debt: 0, min: 0 };
+    const debtVal = num(vals.debt);
+    const minVal = num(vals.min);
+    const dayVal = parseInt(c.day, 10) || 1;
+    const cycleVal = c.cycle === "next" ? "Next Month" : "This Month";
+    const currencyLabel = c.currency || '—';
+    return (
+      `<div class="item-row">` +
+        `<div class="fixed-summary">` +
+          `<strong>${renderExpenseName(c.name)}</strong>` +
+          `<span class="chip">Debt ${debtVal ? debtVal.toFixed(2) : "0.00"} ${currencyLabel}</span>` +
+          `<span class="chip">Min ${minVal ? minVal.toFixed(2) : "0.00"} ${currencyLabel}</span>` +
+          `<span class="chip">Day ${dayVal}</span>` +
+          `<span class="chip">${cycleVal}</span>` +
+        `</div>` +
+      `</div>`
+    );
+  }).join("");
+  return (
+    `<div class="box" style="margin-bottom:12px;">` +
+      `<div class="box-inner">` +
+        `<strong>Previous month cards (${headerLabel})</strong>` +
+        `${rows}` +
+      `</div>` +
+    `</div>`
+  );
+}
+
 function getGlobalFixedKey() {
   return { year: 0, month: "all" };
 }
@@ -591,7 +625,8 @@ async function loadFromSupabase() {
     return;
   }
   prevCards = prevData && Array.isArray(prevData.cards) ? prevData.cards : [];
-  prevMonthCardData = buildMonthCardData(prevCards);
+  prevCards.forEach(ensureCardId);
+  prevMonthCardData = buildMonthCardData(prevCards, prevCards);
 
   const globalKey = getGlobalFixedKey();
   const { data: fixedData, error: fixedError } = await supabaseClient
@@ -851,6 +886,8 @@ function renderCalendar() {
 
 function renderCards() {
   const out = [];
+  const prevBox = renderPreviousMonthCardsBox();
+  if (prevBox) out.push(prevBox);
   cards.forEach((c, i) => {
     const vals = getMonthValues(c.id);
     const debtVal = num(vals.debt);
