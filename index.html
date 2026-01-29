@@ -51,6 +51,7 @@
     .square-btn.active { background: #000; color: #fff; }
     .square-btn.text-fit { width: auto; height: var(--ctrl-h); padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; }
     .chip { border: 2px solid #000; padding: 4px 6px; font-size: 0.65rem; text-transform: uppercase; }
+    .currency-chip { border: 2px solid #000; padding: 2px 6px; font-size: 0.55rem; margin-left: 4px; text-transform: uppercase; }
     .expense-logo { height: 16px; width: auto; display: inline-block; }
     .expense-logo--mono { filter: grayscale(1) brightness(0); }
 
@@ -859,14 +860,15 @@ function renderCards() {
     const cycleVal = c.cycle === "next" ? "Next Month" : "This Month";
     const isNext = c.cycle === "next";
     const cardLabel = renderExpenseName(c.name);
+    const currencyLabel = c.currency || '—';
     out.push(
       `<div class="item-row" style="${isNext ? 'opacity: 0.2' : ''}">` +
         `<button class="btn-del" onclick="deleteItem('card', ${i})">X</button>` +
         `<div class="view-only">` +
           `<div class="fixed-summary">` +
-            `<strong>${cardLabel} (${c.currency || '—'})</strong>` +
-            `<span class="chip">Debt ${debtVal ? debtVal.toFixed(2) : "0.00"}</span>` +
-            `<span class="chip">Min ${minVal ? minVal.toFixed(2) : "0.00"}</span>` +
+            `<strong>${cardLabel}</strong>` +
+            `<span class="chip">Debt ${debtVal ? debtVal.toFixed(2) : "0.00"}<span class="currency-chip">${currencyLabel}</span></span>` +
+            `<span class="chip">Min ${minVal ? minVal.toFixed(2) : "0.00"}<span class="currency-chip">${currencyLabel}</span></span>` +
             `<span class="chip">Day ${dayVal}</span>` +
             `<span class="chip">${cycleVal}</span>` +
           `</div>` +
@@ -932,6 +934,7 @@ function renderFixed() {
     groups[key].push({ f, i });
   });
 
+-    const order = categories.map((c) => c.key).concat(["uncategorized"]);
   const order = categories.map((c) => c.key).concat(["uncategorized"]);
   const labels = categories.reduce((acc, c) => {
     acc[c.key] = c.label;
@@ -943,18 +946,18 @@ function renderFixed() {
     if (!groups[cat] || groups[cat].length === 0) return;
     out.push(`<div class="fixed-category">${labels[cat] || cat}</div>`);
     groups[cat].forEach(({ f, i }) => {
-      const isDue = f.dueMonth === "all" || f.dueMonth === selectedMonth;
-      const catButtons = categories.map((cat) =>
-        `<button type="button" class="square-btn text-fit ${f.category==cat.key?'active':''}" onclick="updateFix(${i}, 'category', '${cat.key}')">${cat.label}</button>`
-      ).join("");
+        const isDue = f.dueMonth === "all" || f.dueMonth === selectedMonth;
+        const currencyLabel = f.currency || "—";
+        const catButtons = categories.map((cat) =>
+          `<button type="button" class="square-btn text-fit ${f.category==cat.key?'active':''}" onclick="updateFix(${i}, 'category', '${cat.key}')">${cat.label}</button>`
+        ).join("");
       out.push(
         `<div class="item-row" style="${!isDue ? 'opacity: 0.2' : ''}">` +
           `<button class="btn-del" onclick="deleteItem('fix', ${i})">X</button>` +
           `<div class="view-only">` +
             `<div class="fixed-summary">` +
               `<strong>${renderExpenseName(f.name)}</strong>` +
-              `<span class="chip">${num(f.amount).toFixed(2)}</span>` +
-              `<span class="chip">${f.currency || '—'}</span>` +
+              `<span class="chip">${num(f.amount).toFixed(2)}<span class="currency-chip">${currencyLabel}</span></span>` +
               `<span class="chip">${formatCharge(f)}</span>` +
             `</div>` +
           `</div>` +
