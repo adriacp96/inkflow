@@ -564,7 +564,9 @@ function renderPreviousMonthCardsBox() {
   const filtered = prevCards.filter((c) => {
     const vals = prevMonthCardData[c.id] || { debt: 0, min: 0 };
     const minVal = num(vals.min);
-    return minVal > 0 && c.cycle === "next";
+    const cardMeta = cards.find((card) => card.id === c.id);
+    const cycleVal = cardMeta ? cardMeta.cycle : c.cycle;
+    return minVal > 0 && cycleVal === "next";
   });
   if (!filtered.length) return "";
   const { year, month } = getSelectedYearMonth();
@@ -575,15 +577,18 @@ function renderPreviousMonthCardsBox() {
     const debtVal = num(vals.debt);
     const minVal = num(vals.min);
     const dayVal = parseInt(c.day, 10) || 1;
-    const cycleVal = c.cycle === "next" ? "Next Month" : "This Month";
-    const currencyLabel = c.currency || '—';
+    const cardMeta = cards.find((card) => card.id === c.id) || c;
+    const cycleVal = cardMeta.cycle === "next" ? "Next Month" : "This Month";
+    const currencyLabel = cardMeta.currency || '—';
+    const nameLabel = renderExpenseName(cardMeta.name);
+    const dayLabel = parseInt(cardMeta.day, 10) || dayVal;
     return (
       `<div class="item-row">` +
         `<div class="fixed-summary">` +
-          `<strong>${renderExpenseName(c.name)}</strong>` +
-          `<span class="chip">Debt ${debtVal ? debtVal.toFixed(2) : "0.00"} ${currencyLabel}</span>` +
-          `<span class="chip">Min ${minVal ? minVal.toFixed(2) : "0.00"} ${currencyLabel}</span>` +
-          `<span class="chip">Day ${dayVal}</span>` +
+          `<strong>${nameLabel} <span class="currency-text">${currencyLabel}</span></strong>` +
+          `<span class="chip">Debt ${debtVal ? debtVal.toFixed(2) : "0.00"}</span>` +
+          `<span class="chip">Min ${minVal ? minVal.toFixed(2) : "0.00"}</span>` +
+          `<span class="chip">Day ${dayLabel}</span>` +
           `<span class="chip">${cycleVal}</span>` +
         `</div>` +
       `</div>`
@@ -894,9 +899,10 @@ function renderCards() {
   const prevBox = renderPreviousMonthCardsBox();
   if (prevBox) out.push(prevBox);
   cards.forEach((c, i) => {
-    const vals = c.cycle === "next"
-      ? (prevMonthCardData[c.id] || { debt: 0, min: 0 })
-      : getMonthValues(c.id);
+    const currentSnapshot = monthCardData[c.id];
+    const vals = currentSnapshot && (currentSnapshot.debt || currentSnapshot.min || currentSnapshot.hasOwnProperty("debt") || currentSnapshot.hasOwnProperty("min"))
+      ? currentSnapshot
+      : (c.cycle === "next" ? (prevMonthCardData[c.id] || { debt: 0, min: 0 }) : getMonthValues(c.id));
     const debtVal = num(vals.debt);
     const minVal = num(vals.min);
     const dayVal = parseInt(c.day, 10) || 1;
