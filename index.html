@@ -51,6 +51,8 @@
     .square-btn.active { background: #000; color: #fff; }
     .square-btn.text-fit { width: auto; height: var(--ctrl-h); padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; }
     .chip { border: 2px solid #000; padding: 4px 6px; font-size: 0.65rem; text-transform: uppercase; }
+    .expense-logo { height: 16px; width: auto; display: inline-block; }
+    .expense-logo--mono { filter: grayscale(1) brightness(0); }
 
     .hidden { display: none; }
 
@@ -120,6 +122,7 @@
       .cal-day[data-intensity="5"] { background: #fff; color: #000; }
       .cal-info { border-top-color: #fff; }
       .sticky-actions { background: #000; border-top-color: #fff; }
+      .expense-logo--mono { filter: grayscale(1) brightness(0) invert(1); }
     }
   </style>
 </head>
@@ -250,7 +253,7 @@
         </div>
         <div id="extraOptions" class="hidden">
           <div class="grid">
-            <div><label>Every</label><select id="fixFreq"><option value="6">6 Months</option><option value="12">1 Year</option><option value="36">3 Years</option></select></div>
+            <div><label>Every (Months)</label><input type="number" id="fixFreq" min="1" step="1" value="6" /></div>
             <div><label>Charge Month</label><select id="fixMonth"><option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option><option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option></select></div>
           </div>
         </div>
@@ -501,6 +504,42 @@ function formatCharge(f) {
   const monthLabel = f.dueMonth === "all" ? "Monthly" : (MONTHS[f.dueMonth] || f.dueMonth);
   const dayLabel = f.day ? `Day ${f.day}` : "Day ?";
   return `${dayLabel} · ${monthLabel}`;
+}
+
+function renderExpenseName(name) {
+  const trimmed = (name || "").trim();
+  const normalized = trimmed.toLowerCase().replace(/\s+/g, "");
+  if (normalized === "netflix") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/Netflix.svg" alt="Netflix">`;
+  }
+  if (normalized === "appleone" || normalized === "apple one") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/AppleOne.svg" alt="Apple One">`;
+  }
+  if (normalized === "youtubepremium" || normalized === "youtube premium") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/YouTubePremium.svg" alt="YouTube Premium">`;
+  }
+  if (normalized === "emiratesislamic" || normalized === "emirates islamic") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/EmiratesIslamic.svg" alt="Emirates Islamic">`;
+  }
+  if (normalized === "emiratesnbd" || normalized === "emirates nbd") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/emiratesnbd.png" alt="Emirates NBD">`;
+  }
+  if (normalized === "tabby") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/tabby.png" alt="Tabby">`;
+  }
+  if (normalized === "amex" || normalized === "americanexpress" || normalized === "american express") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/amex.svg" alt="American Express">`;
+  }
+  if (normalized === "virgin") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/Virgin.svg" alt="Virgin">`;
+  }
+  if (normalized === "du") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/du.png" alt="du">`;
+  }
+  if (normalized === "formula1" || normalized === "f1") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/f1.png" alt="Formula 1">`;
+  }
+  return trimmed || "—";
 }
 
 function refreshAll() { renderCards(); renderFixed(); renderCharts(); }
@@ -909,7 +948,7 @@ function renderFixed() {
           `<button class="btn-del" onclick="deleteItem('fix', ${i})">X</button>` +
           `<div class="view-only">` +
             `<div class="fixed-summary">` +
-              `<strong>${f.name || '—'}</strong>` +
+              `<strong>${renderExpenseName(f.name)}</strong>` +
               `<span class="chip">${num(f.amount).toFixed(2)}</span>` +
               `<span class="chip">${f.currency || '—'}</span>` +
               `<span class="chip">${formatCharge(f)}</span>` +
@@ -964,6 +1003,10 @@ function renderFixed() {
               `<div><label>Charge</label><select onchange="updateFix(${i}, 'dueMonth', this.value)"><option value="all" ${f.dueMonth=='all'?'selected':''}>Month</option><option value="01" ${f.dueMonth=='01'?'selected':''}>Jan</option><option value="02" ${f.dueMonth=='02'?'selected':''}>Feb</option><option value="03" ${f.dueMonth=='03'?'selected':''}>Mar</option><option value="04" ${f.dueMonth=='04'?'selected':''}>Apr</option><option value="05" ${f.dueMonth=='05'?'selected':''}>May</option><option value="06" ${f.dueMonth=='06'?'selected':''}>Jun</option><option value="07" ${f.dueMonth=='07'?'selected':''}>Jul</option><option value="08" ${f.dueMonth=='08'?'selected':''}>Aug</option><option value="09" ${f.dueMonth=='09'?'selected':''}>Sep</option><option value="10" ${f.dueMonth=='10'?'selected':''}>Oct</option><option value="11" ${f.dueMonth=='11'?'selected':''}>Nov</option><option value="12" ${f.dueMonth=='12'?'selected':''}>Dec</option></select></div>` +
             `</div>` +
             `<div class="grid">` +
+              `<div><label>Every (Months)</label><input type="number" min="1" step="1" value="${parseInt(f.freq, 10) || 1}" onchange="updateFix(${i}, 'freq', this.value)" /></div>` +
+              `<div></div>` +
+            `</div>` +
+            `<div class="grid">` +
               `<div><label>Category</label>` +
                 `<div class="btn-group">` +
                   `${catButtons}` +
@@ -986,7 +1029,7 @@ dom.editToggle.addEventListener("click", function() {
 });
 
 window.updateFix = (i, fld, val) => {
-  fixedGasto[i][fld] = (fld === 'amount' || fld === 'day') ? num(val) : val;
+  fixedGasto[i][fld] = (fld === 'amount' || fld === 'day' || fld === 'freq') ? num(val) : val;
   queueAutosave();
   renderFixed();
 };
