@@ -624,6 +624,9 @@ function renderExpenseName(name) {
   if (normalized === "du") {
     return `<img class="expense-logo expense-logo--mono" src="assets/du.png" alt="du">`;
   }
+  if (normalized === "realdebrid" || normalized === "real debrid") {
+    return `<img class="expense-logo expense-logo--mono" src="assets/realdebrid.png" alt="Real Debrid">`;
+  }
   if (normalized === "formula1" || normalized === "f1") {
     return `<img class="expense-logo expense-logo--mono" src="assets/f1.png" alt="Formula 1">`;
   }
@@ -988,7 +991,16 @@ function renderCards() {
   const out = [];
   const prevBox = renderPreviousMonthCardsBox();
   if (prevBox) out.push(prevBox);
-  cards.forEach((c, i) => {
+  const ordered = cards
+    .map((card, idx) => ({ card, idx }))
+    .sort((a, b) => {
+      const aName = (a.card.name || "").toLowerCase();
+      const bName = (b.card.name || "").toLowerCase();
+      if (aName < bName) return -1;
+      if (aName > bName) return 1;
+      return 0;
+    });
+  ordered.forEach(({ card: c, idx: i }) => {
     const currentSnapshot = monthCardData[c.id];
     const vals = currentSnapshot && (currentSnapshot.debt || currentSnapshot.min || currentSnapshot.hasOwnProperty("debt") || currentSnapshot.hasOwnProperty("min"))
       ? currentSnapshot
@@ -1086,6 +1098,13 @@ function renderFixed() {
   order.forEach((cat) => {
     if (!groups[cat] || groups[cat].length === 0) return;
     out.push(`<div class="fixed-category">${labels[cat] || cat}</div>`);
+    groups[cat].sort((a, b) => {
+      const nameA = (a.f.name || "").toLowerCase();
+      const nameB = (b.f.name || "").toLowerCase();
+      if (nameA < nameB) return -1;
+      if (nameA > nameB) return 1;
+      return 0;
+    });
     groups[cat].forEach(({ f, i }) => {
       const isDue = f.dueMonth === "all" || f.dueMonth === selectedMonth;
       const catButtons = categories.map((cat) =>
