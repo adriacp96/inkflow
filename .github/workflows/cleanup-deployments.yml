@@ -65,8 +65,9 @@ jobs:
                 await new Promise(resolve => setTimeout(resolve, 500));
               } catch (error) {
                 console.error(`Failed to delete deployment ${deployment.id}: ${error.message}`);
-                if (error.status) {
-                  console.error(`  Status: ${error.status}`);
+                const status = error.status || error.response?.status;
+                if (status) {
+                  console.error(`  Status: ${status}`);
                 }
                 failedCount++;
               }
