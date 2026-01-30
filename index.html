@@ -86,10 +86,66 @@
     .month-btn.active, .month-arrow:focus-visible { background: #000; color: #fff; }
     .expense-logo { height: 16px; width: auto; display: inline-block; }
     .expense-logo--mono { filter: grayscale(1) brightness(0); }
-    .yearly-chart { display:flex; gap:6px; align-items:flex-end; height:120px; border:2px solid #000; padding:8px; }
-    .yearly-bar { flex:1; border:2px solid #000; position:relative; background:#fff; display:flex; align-items:flex-end; justify-content:center; overflow:hidden; }
-    .yearly-bar-fill { position:absolute; bottom:0; left:0; width:100%; background:#000; }
-    .yearly-bar-label { position:absolute; bottom:-18px; font-size:0.6rem; text-transform:uppercase; }
+    .square-chart {
+      border: 2px solid #000;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      aspect-ratio: 1 / 1;
+    }
+    .square-chart .btn-group {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+    }
+    .yearly-chart {
+      flex: 1;
+      position: relative;
+    }
+    .yearly-chart svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .yearly-chart polyline,
+    .yearly-chart circle {
+      stroke: #000;
+      fill: none;
+    }
+    .yearly-chart circle {
+      fill: #000;
+    }
+    .yearly-legend {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex-wrap: wrap;
+    }
+    .yearly-legend span {
+      flex: 1;
+      text-align: center;
+    }
+    .cards-section .cards-grid {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+    }
+    .cards-section .square-chart {
+      flex: 0 0 230px;
+      max-width: 230px;
+      min-width: 200px;
+      order: 2;
+      margin-left: auto;
+    }
+    .cards-section #cardsList {
+      flex: 1;
+      order: 1;
+    }
 
     .hidden { display: none; }
 
@@ -193,12 +249,6 @@
   </div>
 
   <div class="section">
-    <h2>Yearly Card Debt</h2>
-    <div id="yearlyCardSelector" class="btn-group"></div>
-    <div id="yearlyDebtChart" class="yearly-chart"></div>
-  </div>
-
-  <div class="section">
     <h2>Actual Payments</h2>
     <div class="actual-grid">
       <div id="chartsContainer"></div>
@@ -209,9 +259,16 @@
     </div>
   </div>
 
-  <div class="section">
+  <div class="section cards-section">
     <h2>Cards</h2>
-    <div id="cardsList"></div>
+    <div class="cards-grid">
+      <div class="square-chart">
+        <div id="yearlyCardSelector" class="btn-group"></div>
+        <div id="yearlyDebtChart" class="yearly-chart"></div>
+        <div id="yearlyLegend" class="yearly-legend"></div>
+      </div>
+      <div id="cardsList"></div>
+    </div>
     <details class="box">
       <summary>+ New Card</summary>
       <div class="box-inner">
@@ -402,7 +459,8 @@ const dom = {
   editToggle: document.getElementById("editToggle"),
   refreshBtn: document.getElementById("refreshBtn"),
   yearlyDebtChart: document.getElementById("yearlyDebtChart"),
-  yearlyCardSelector: document.getElementById("yearlyCardSelector")
+  yearlyCardSelector: document.getElementById("yearlyCardSelector"),
+  yearlyLegend: document.getElementById("yearlyLegend")
 };
 
 const CURRENCIES = ["AED", "EUR", "IDR"];
@@ -602,25 +660,26 @@ function shiftMonth(delta) {
 }
 window.shiftMonth = shiftMonth;
 
-function updateSelectedCardIds() {
+function syncSelectedCardIds() {
   const availableIds = new Set(cards.map((c) => c.id));
-  if (!selectedCardIds.size) {
-    selectedCardIds = new Set(availableIds);
-    return;
-  }
   const updated = new Set();
   selectedCardIds.forEach((id) => {
     if (availableIds.has(id)) updated.add(id);
   });
   if (!updated.size) {
-    selectedCardIds = new Set(availableIds);
-  } else {
-    selectedCardIds = updated;
+    availableIds.forEach((id) => updated.add(id));
   }
+  selectedCardIds = updated;
+}
+
+function refreshYearlyVisualization() {
+  renderYearlyCardSelector();
+  renderYearlyChart();
 }
 
 function renderYearlyCardSelector() {
   if (!dom.yearlyCardSelector) return;
+  syncSelectedCardIds();
   const sortedCards = [...cards].sort((a, b) => {
     const aName = (a.name || "").toLowerCase();
     const bName = (b.name || "").toLowerCase();
@@ -639,19 +698,34 @@ function renderYearlyChart() {
   if (!dom.yearlyDebtChart) return;
   const sums = MONTH_KEYS.map((month) => {
     const rows = yearlyCardData[month] || [];
-    const total = rows.reduce((acc, row) => selectedCardIds.has(row.id) ? acc + num(row.debt) : acc, 0);
+    const total = rows.reduce((acc, row) => (selectedCardIds.has(row.id) ? acc + num(row.debt) : acc), 0);
     return { month, total };
   });
   const max = Math.max(1, ...sums.map((item) => item.total));
-  dom.yearlyDebtChart.innerHTML = sums.map((item) => {
-    const height = `${(item.total / max) * 100}%`;
-    return (
-      `<div class="yearly-bar">` +
-        `<div class="yearly-bar-fill" style="height:${height};"></div>` +
-        `<span class="yearly-bar-label">${MONTHS[item.month]}</span>` +
-      `</div>`
-    );
-  }).join("");
+  const points = sums.map((item, index) => {
+    const x = (index / (sums.length - 1)) * 100;
+    const y = 100 - (item.total / max) * 100;
+    return { ...item, x, y };
+  });
+  const pathPoints = points.map((p) => `${p.x},${p.y}`).join(" ");
+  const axisLines = [25, 50, 75].map((percentage) => (
+    `<line x1="0" y1="${100 - percentage}" x2="100" y2="${100 - percentage}" stroke="#000" stroke-opacity="0.2" stroke-width="0.5"></line>`
+  )).join("");
+  const circleElems = points.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="1.5"></circle>`).join("");
+  dom.yearlyDebtChart.innerHTML = `
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+      ${axisLines}
+      <polyline points="${pathPoints}" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>
+      ${circleElems}
+      ${points.map((p) => `<text x="${p.x}" y="${p.y - 3}" text-anchor="middle" font-size="2" fill="black">${Math.round(p.total)}</text>`).join("")}
+    </svg>
+  `;
+  renderYearlyLegend(points);
+}
+
+function renderYearlyLegend(points) {
+  if (!dom.yearlyLegend) return;
+  dom.yearlyLegend.innerHTML = points.map((p) => `<span>${MONTHS[p.month]}</span>`).join("");
 }
 
 async function loadYearlyCardData() {
@@ -677,7 +751,7 @@ async function loadYearlyCardData() {
   (data || []).forEach((row) => {
     yearlyCardData[row.month] = Array.isArray(row.cards) ? row.cards : [];
   });
-  updateSelectedCardIds();
+  syncSelectedCardIds();
   renderYearlyCardSelector();
   renderYearlyChart();
 }
@@ -739,7 +813,12 @@ function renderExpenseName(name) {
   return trimmed || "—";
 }
 
-function refreshAll() { renderCards(); renderFixed(); renderCharts(); }
+function refreshAll() {
+  renderCards();
+  renderFixed();
+  renderCharts();
+  refreshYearlyVisualization();
+}
 
 function getSelectedYearMonth() {
   return {
@@ -1352,7 +1431,7 @@ dom.addCardBtn.addEventListener("click", () => {
   monthCardData[newCard.id] = { debt: 0, min: 0 };
   n.value = "";
   queueAutosave();
-  renderCards();
+  refreshAll();
 });
 
 dom.addFixBtn.addEventListener("click", () => {
