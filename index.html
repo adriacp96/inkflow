@@ -91,7 +91,7 @@
       padding: 0;
       display: flex;
       flex-direction: column;
-      width: fit-content;
+      width: auto;
       background: #fff;
     }
     .square-chart-body {
@@ -711,9 +711,19 @@ function syncSquareChartSize() {
   if (!calendar || !square) return;
   const rect = calendar.getBoundingClientRect();
   const body = square.querySelector(".square-chart-body");
+  const controls = square.querySelector(".square-chart-controls");
+  const controlsHeight = controls ? Math.max(controls.getBoundingClientRect().height, 0) : 0;
   if (!body) return;
-  if (rect.width > 0) body.style.width = `${rect.width}px`;
-  if (rect.height > 0) body.style.height = `${rect.height}px`;
+  if (rect.width > 0) {
+    square.style.width = `${rect.width}px`;
+    body.style.width = `${rect.width}px`;
+  }
+  if (rect.height > 0) {
+    const targetHeight = rect.height;
+    const bodyHeight = Math.max(targetHeight - controlsHeight, 0);
+    square.style.height = `${targetHeight}px`;
+    body.style.height = `${bodyHeight}px`;
+  }
 }
 
 function renderYearlyCardSelector() {
