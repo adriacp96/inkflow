@@ -18,3 +18,4 @@ InkFlow is your single-page finance companion with a calm, monochrome look.
 - Logos for known brands live in the `assets/` folder, so matching names show their icon beside the entry.
 
 Launch it on GitHub Pages by publishing from `main` with the repo root as the source, then visit `https://adriacp96.github.io/inkflow/`.
+test pr
