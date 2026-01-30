@@ -86,15 +86,6 @@
     .month-btn.active, .month-arrow:focus-visible { background: #000; color: #fff; }
     .expense-logo { height: 16px; width: auto; display: inline-block; }
     .expense-logo--mono { filter: grayscale(1) brightness(0); }
-    .cards-section {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .cards-section #cardsList,
-    .cards-section .square-chart {
-      width: 100%;
-    }
 
     .hidden { display: none; }
 
@@ -208,11 +199,9 @@
     </div>
   </div>
 
-  <div class="section cards-section">
+  <div class="section">
     <h2>Cards</h2>
-    <div class="cards-grid">
-      <div id="cardsList"></div>
-    </div>
+    <div id="cardsList"></div>
     <details class="box">
       <summary>+ New Card</summary>
       <div class="box-inner">
@@ -416,8 +405,6 @@ const DEFAULT_CATEGORIES = [
   { key: "loans", label: "Loans" },
   { key: "insurance", label: "Insurance" }
 ];
-
-const CARD_LINE_COLORS = ["#000", "#333", "#555", "#777", "#9a0000", "#0057b8", "#2d6b2d", "#aa5500", "#990099"];
 
 let categories = DEFAULT_CATEGORIES;
 
@@ -649,12 +636,7 @@ function renderExpenseName(name) {
   return trimmed || "—";
 }
 
-function refreshAll() {
-  renderCards();
-  renderFixed();
-  renderCharts();
-  refreshYearlyVisualization();
-}
+function refreshAll() { renderCards(); renderFixed(); renderCharts(); }
 
 function getSelectedYearMonth() {
   return {
@@ -1003,7 +985,6 @@ function renderCalendar() {
         lines.map((line) => `<div>${line}</div>`).join("");
     });
   });
-  syncSquareChartSize();
 }
 
 function renderCards() {
@@ -1268,7 +1249,7 @@ dom.addCardBtn.addEventListener("click", () => {
   monthCardData[newCard.id] = { debt: 0, min: 0 };
   n.value = "";
   queueAutosave();
-  refreshAll();
+  renderCards();
 });
 
 dom.addFixBtn.addEventListener("click", () => {
@@ -1316,14 +1297,12 @@ dom.addCatBtn.addEventListener("click", () => {
 });
 window.onDateChange = async () => {
   await loadFromSupabase();
-  await loadYearlyCardData();
   refreshAll();
   updateMonthButtons();
 };
 dom.yearSelect.addEventListener("change", window.onDateChange);
 dom.monthSelect.addEventListener("change", window.onDateChange);
 window.onDateChange();
-window.addEventListener("resize", syncSquareChartSize);
 </script>
 </body>
 </html>
