@@ -94,43 +94,7 @@
     .bar-fill { background: #000; height: 100%; transition: width 0.3s; }
     .bar-fill.min { background: repeating-linear-gradient(45deg, #000, #000 2px, #fff 2px, #fff 4px); }
     .bar-label { display: flex; justify-content: space-between; font-size: 0.75rem; }
-    .graphic-canvas {
-      border: 2px solid #000;
-      min-height: 160px;
-      margin-top: 10px;
-      background: #fff;
-      padding: 10px;
-      display: flex;
-      align-items: flex-end;
-    }
-    .graphic-canvas svg {
-      width: 100%;
-      height: 100%;
-    }
-    .graphic-legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin: 10px 0 0;
-    }
-    .graphic-legend span {
-      border: 2px solid;
-      padding: 4px 8px;
-      font-size: 0.65rem;
-      text-transform: uppercase;
-    }
-    .graphic-months {
-      display: flex;
-      gap: 6px;
-      justify-content: space-between;
-      font-size: 0.6rem;
-      text-transform: uppercase;
-      margin-top: 6px;
-    }
-    .graphic-months span {
-      width: calc(100% / 12 - 4px);
-      text-align: center;
-    }
+
     .item-row { border-bottom: 1px solid #000; padding: 10px 0; overflow: hidden; }
     .muted { font-size: 0.6rem; font-style: italic; margin-top: 2px; }
     .fixed-summary { display: flex; gap: 10px; align-items: center; font-size: 0.7rem; text-transform: uppercase; }
@@ -232,23 +196,6 @@
         <div id="calendarContainer"></div>
         <div id="calendarInfo" class="cal-info"></div>
       </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <h2>Graphics</h2>
-    <div class="btn-group" id="graphicSelectors">
-      <button type="button" class="square-btn text-fit active" data-graphic="cards">Cards Linear</button>
-      <button type="button" class="square-btn text-fit" data-graphic="loans">Loans Linear</button>
-    </div>
-    <div class="box">
-      <div class="fixed-summary" style="flex-wrap: wrap; gap:8px;">
-        <strong id="graphicTitle">Cards Linear Graphic</strong>
-        <span id="graphicSubtitle" class="muted">Monthly payments by card</span>
-      </div>
-      <div id="graphicCanvas" class="graphic-canvas"></div>
-      <div id="graphicLegend" class="graphic-legend"></div>
-      <div id="graphicMonths" class="graphic-months"></div>
     </div>
   </div>
 
@@ -452,12 +399,6 @@ const dom = {
   fixStartDate: document.getElementById("fixStartDate"),
   fixEndDate: document.getElementById("fixEndDate"),
   addFixBtn: document.getElementById("addFixBtn"),
-  graphicSelectors: document.getElementById("graphicSelectors"),
-  graphicTitle: document.getElementById("graphicTitle"),
-  graphicSubtitle: document.getElementById("graphicSubtitle"),
-  graphicCanvas: document.getElementById("graphicCanvas"),
-  graphicLegend: document.getElementById("graphicLegend"),
-  graphicMonths: document.getElementById("graphicMonths"),
   editToggle: document.getElementById("editToggle"),
   refreshBtn: document.getElementById("refreshBtn")
 };
@@ -546,179 +487,6 @@ const num = (val) => {
   const n = parseFloat(val);
   return Number.isFinite(n) ? n : 0;
 };
-
-const GRAPHICS = {
-  cards: {
-    title: "Cards Linear Graphic",
-    subtitle: "Monthly payments by card"
-  },
-  loans: {
-    title: "Loans Linear Graphic",
-    subtitle: "Installment performance"
-  }
-};
-
-const GRAPHIC_PALETTE = ["#000000", "#1c1c1c", "#383838", "#555555", "#707070", "#8a8a8a", "#a4a4a4"];
-let graphicHistory = { months: getYearMonths(new Date().getFullYear()), snapshots: {}, loaded: false };
-let currentGraphicType = "cards";
-
-function getYearMonths(year) {
-  const months = [];
-  for (let m = 1; m <= 12; m += 1) {
-    const month = String(m).padStart(2, "0");
-    months.push({ year, month, key: `${year}-${month}` });
-  }
-  return months;
-}
-
-function buildMultiLineSvg(seriesData) {
-  const months = graphicHistory.months.length ? graphicHistory.months : [];
-  const monthCount = Math.max(1, months.length);
-  const allValues = seriesData
-    .flatMap((series) => (series.series || []).filter((value) => value !== null && value !== undefined));
-  const maxValue = Math.max(1, ...allValues);
-  const divisor = monthCount > 1 ? monthCount - 1 : 1;
-  const lines = seriesData.map((series) => {
-    if (!series.series || !series.series.length) return "";
-    const points = [];
-    series.series.forEach((value, idx) => {
-      if (value === null || value === undefined) return;
-      const x = (idx / divisor) * 100;
-      const y = 40 - ((value / maxValue) * 36);
-      points.push(`${x},${y}`);
-    });
-    if (!points.length) return "";
-    return `<polyline fill="none" stroke="${series.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${points.join(" ")}" />`;
-  }).join("");
-  if (!lines) return "";
-  return `<svg viewBox="0 0 100 40" preserveAspectRatio="none">${lines}</svg>`;
-}
-
-function renderGraphicLegend(seriesData) {
-  if (!dom.graphicLegend) return;
-  if (!seriesData.length) {
-    dom.graphicLegend.textContent = "No data available";
-    return;
-  }
-  dom.graphicLegend.innerHTML = seriesData.map((series) => (
-    `<span style="border-color:${series.color};color:${series.color}">${(series.label || "Series").toUpperCase()}</span>`
-  )).join("");
-}
-
-function renderGraphicMonths(months) {
-  if (!dom.graphicMonths) return;
-  if (!months.length) {
-    dom.graphicMonths.innerHTML = "";
-    return;
-  }
-  dom.graphicMonths.innerHTML = months.map((m) => {
-    const label = `${MONTHS[m.month] || m.month} ${m.year}`;
-    return `<span>${label}</span>`;
-  }).join("");
-}
-
-function activeGraphicSeries(type) {
-  currentGraphicType = type;
-  if (dom.graphicSelectors) {
-    dom.graphicSelectors.querySelectorAll("button").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.graphic === type);
-    });
-  }
-}
-
-function buildCardGraphicSeries(months) {
-  const { year, month } = getSelectedYearMonth();
-  const fallbackKey = buildYearMonthKey(year, month);
-  const snapshots = graphicHistory.snapshots;
-  const actualMonths = months.length ? months : [{ year, month, key: fallbackKey }];
-  return cards.map((card, idx) => {
-    const series = actualMonths.map((m) => {
-      const snapshot = snapshots[m.key];
-      if (snapshot) {
-        const entry = snapshot.find((c) => c.id === card.id);
-        if (entry) return num(entry.min);
-      }
-      if (m.key === fallbackKey) {
-        const current = monthCardData[card.id];
-        if (current) return num(current.min);
-      }
-      return 0;
-    });
-    return {
-      label: card.name || `Card ${idx + 1}`,
-      color: GRAPHIC_PALETTE[idx % GRAPHIC_PALETTE.length],
-      series
-    };
-  }).filter((series) => series.series.some((value) => value > 0));
-}
-
-function buildLoanGraphicSeries(months) {
-  const actualMonths = months.length ? months : [getSelectedYearMonth()];
-  return fixedGasto
-    .filter((f) => f.category === "loans")
-    .map((loan, idx) => ({
-      label: loan.name || `Loan ${idx + 1}`,
-      color: GRAPHIC_PALETTE[(idx + cards.length) % GRAPHIC_PALETTE.length],
-      series: (() => {
-        const startKey = monthKeyFromDate(loan.startDate);
-        const endKey = monthKeyFromDate(loan.endDate);
-        if (!startKey || !endKey) return actualMonths.map(() => null);
-        const paymentCount = monthsBetweenInclusive(startKey, endKey);
-        if (!paymentCount) return actualMonths.map(() => null);
-        const installmentAmount = num(loan.amount);
-        const totalAmount = installmentAmount * paymentCount;
-        return actualMonths.map((m) => {
-          const index = monthIndexSince(startKey, m.key);
-          if (index <= 0 || index > paymentCount) return null;
-          if (index === 1) return totalAmount;
-          if (index === paymentCount) return 0;
-          return Math.max(totalAmount - installmentAmount * (index - 1), 0);
-        });
-      })()
-    }))
-    .filter((series) => series.series.some((value) => value > 0));
-}
-
-async function updateGraphicHistory() {
-  const { year } = getSelectedYearMonth();
-  const months = getYearMonths(year);
-  graphicHistory = { months, snapshots: {}, loaded: false };
-  if (!isSupabaseConfigured()) {
-    renderGraphic(currentGraphicType);
-    return;
-  }
-  const requests = months.map((m) => supabaseClient
-    .from('fin_snapshots')
-    .select('cards')
-    .eq('year', m.year)
-    .eq('month', m.month)
-    .maybeSingle()
-  );
-  const results = await Promise.all(requests.map((prom) => prom.catch((err) => ({ error: err }))));
-  results.forEach((res, idx) => {
-    if (res && !res.error && res.data && Array.isArray(res.data.cards)) {
-      graphicHistory.snapshots[months[idx].key] = res.data.cards;
-    }
-  });
-  graphicHistory.loaded = true;
-  renderGraphic(currentGraphicType);
-}
-
-function renderGraphic(type) {
-  activeGraphicSeries(type);
-  const meta = GRAPHICS[type] || GRAPHICS.cards;
-  if (dom.graphicTitle) dom.graphicTitle.textContent = meta.title;
-  if (dom.graphicSubtitle) dom.graphicSubtitle.textContent = meta.subtitle;
-  const seriesData = type === "loans"
-    ? buildLoanGraphicSeries(graphicHistory.months)
-    : buildCardGraphicSeries(graphicHistory.months);
-  const svgMarkup = buildMultiLineSvg(seriesData);
-  if (dom.graphicCanvas) {
-    dom.graphicCanvas.innerHTML = svgMarkup || "<div>No data</div>";
-  }
-  renderGraphicLegend(seriesData);
-  renderGraphicMonths(graphicHistory.months);
-}
 
 let cardIdCounter = 0;
 function makeCardId() {
@@ -1096,12 +864,8 @@ async function loadFromSupabase() {
   categories = fixedData && Array.isArray(fixedData.categories) && fixedData.categories.length
     ? fixedData.categories
     : DEFAULT_CATEGORIES;
-  graphicHistory.months = getYearMonths(year);
-  graphicHistory.snapshots = {};
-  graphicHistory.loaded = false;
   renderCategoryButtons();
   updateLoanTermVisibility();
-  renderGraphic(currentGraphicType);
 }
 
 async function saveToSupabase(showAlert = false) {
@@ -1651,14 +1415,6 @@ dom.fixFreq.addEventListener("change", () => { dom.fixFreq.dataset.changed = "1"
 dom.fixMonth.addEventListener("change", () => { dom.fixMonth.dataset.changed = "1"; });
 renderCategoryButtons();
 updateLoanTermVisibility();
-if (dom.graphicSelectors) {
-  dom.graphicSelectors.querySelectorAll("button").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      renderGraphic(btn.dataset.graphic || "cards");
-    });
-  });
-}
-renderGraphic("cards");
 dom.addCatBtn.addEventListener("click", () => {
   addCategory(dom.newCatName.value);
   dom.newCatName.value = "";
@@ -1667,7 +1423,6 @@ window.onDateChange = async () => {
   await loadFromSupabase();
   refreshAll();
   updateMonthButtons();
-  updateGraphicHistory().catch((err) => console.error("Graphic history error:", err));
 };
 dom.yearSelect.addEventListener("change", window.onDateChange);
 dom.monthSelect.addEventListener("change", window.onDateChange);
