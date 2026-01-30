@@ -91,10 +91,17 @@
       padding: 0;
       display: flex;
       flex-direction: column;
-      width: 100%;
-      height: 100%;
+      width: fit-content;
+      background: #fff;
     }
-    .square-chart .yearly-chart {
+    .square-chart-body {
+      flex: 1;
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
+      overflow: hidden;
+    }
+    .square-chart-body .yearly-chart {
       flex: 1;
       padding: 10px;
     }
@@ -104,7 +111,6 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      background: #fff;
     }
     .card-selector {
       display: flex;
@@ -146,6 +152,19 @@
     .yearly-legend span {
       flex: 1;
       text-align: center;
+    }
+    .card-months {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      justify-content: center;
+      font-size: 0.55rem;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .card-months span {
+      border: 1px solid #000;
+      padding: 2px 6px;
     }
     .cards-section .cards-grid {
       display: flex;
@@ -279,10 +298,13 @@
     <h2>Cards</h2>
     <div class="cards-grid">
       <div class="square-chart">
-        <div id="yearlyDebtChart" class="yearly-chart"></div>
+        <div class="square-chart-body">
+          <div id="yearlyDebtChart" class="yearly-chart"></div>
+        </div>
         <div class="square-chart-controls">
           <div id="yearlyCardSelector" class="card-selector"></div>
           <div id="yearlyLegend" class="yearly-legend"></div>
+          <div id="yearlyMonthRow" class="card-months"></div>
         </div>
       </div>
       <div id="cardsList"></div>
@@ -702,12 +724,10 @@ function syncSquareChartSize() {
   const square = document.querySelector(".cards-section .square-chart");
   if (!calendar || !square) return;
   const rect = calendar.getBoundingClientRect();
-  if (rect.width > 0) {
-    square.style.width = `${rect.width}px`;
-  }
-  if (rect.height > 0) {
-    square.style.height = `${rect.height}px`;
-  }
+  const body = square.querySelector(".square-chart-body");
+  if (!body) return;
+  if (rect.width > 0) body.style.width = `${rect.width}px`;
+  if (rect.height > 0) body.style.height = `${rect.height}px`;
 }
 
 function renderYearlyCardSelector() {
@@ -722,7 +742,7 @@ function renderYearlyCardSelector() {
   });
   dom.yearlyCardSelector.innerHTML = sortedCards.map((card) => {
     const active = selectedCardIds.has(card.id) ? "active" : "";
-    const label = card.name || "Card";
+    const label = card.name || card.currency || `#${idx + 1}`;
     return `<button type="button" class="square-btn text-fit ${active}" onclick="toggleYearlyCard('${card.id}')">${label}</button>`;
   }).join("");
 }
@@ -801,6 +821,13 @@ function renderYearlyLegend(seriesList) {
   dom.yearlyLegend.innerHTML = seriesList
     .map((series) => `<span style="color:${series.color}">${series.name}</span>`)
     .join("");
+  renderYearlyMonths();
+}
+
+function renderYearlyMonths() {
+  const row = document.getElementById("yearlyMonthRow");
+  if (!row) return;
+  row.innerHTML = MONTH_KEYS.map((code) => `<span>${MONTHS[code]}</span>`).join("");
 }
 
 async function loadYearlyCardData() {
