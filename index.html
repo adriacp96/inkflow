@@ -471,7 +471,7 @@ function getLoanInstallmentText(fix, year, month) {
   const currentKey = buildYearMonthKey(year, month);
   if (currentKey < startKey || currentKey > endKey) return "";
   const current = monthIndexSince(startKey, currentKey);
-  return `Installment ${current}/${total}`;
+  return `${current}/${total}`;
 }
 
 const DEFAULT_CATEGORIES = [
