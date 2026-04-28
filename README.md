@@ -15,7 +15,7 @@ With built-in multi-currency support and seamless cloud synchronization powered 
 
 ### 💱 Multi-Currency & Global Tracking
 - Natively track expenses in **AED**, **EUR**, and **IDR**.
-- Visual bar charts automatically break down total debt vs. monthly payments per currency.
+- Dashboards and visual bar charts automatically break down total debt vs. monthly payments per currency.
 
 ### 📅 Dynamic Financial Calendar
 - **Intensity Heatmap:** Calendar days automatically shade darker based on the volume of payments due, letting you spot high-expense days at a glance.
@@ -33,6 +33,10 @@ With built-in multi-currency support and seamless cloud synchronization powered 
 ### ☁️ Cloud Sync (Supabase)
 - Automatic, non-intrusive cloud saving ensures you never lose your data.
 - Effortlessly navigate back and forth through years and months, instantly loading historical financial snapshots.
+
+### 📊 Export & Accessibility
+- **Local Backups:** Instantly export your entire active snapshot to JSON via the sticky "Export" button.
+- **Keyboard Navigation:** Navigate seamlessly between months using the `Left Arrow` and `Right Arrow` keys.
 
 ### 🌗 Clean & Responsive UI
 - A utilitarian, print-inspired design language.
@@ -92,7 +96,7 @@ All you need is a modern web browser. INKFLOW runs entirely on the client-side w
 1. **Navigate Time:** Use the top bar to select the Year and Month. Data will automatically fetch from the cloud.
 2. **Add a Card/Expense:** Scroll to the respective sections, open the `+ New` dropdown, fill in your details (Amount, Currency, Day of Month), and hit Add.
 3. **Edit Mode:** Click the `✎ Edit` button floating at the bottom right to toggle editing capabilities. This reveals controls to tweak balances, days, categories, or delete items.
-4. **View Breakdowns:** Check the "Actual Payments" section to see your debt-to-payment ratio bars and your calendar heatmap.
+4. **View Breakdowns:** Check the "Actual Payments" section to see your top-level totals, your debt-to-payment ratio bars, and your interactive calendar heatmap.
 
 ---
 
