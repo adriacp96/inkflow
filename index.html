@@ -122,6 +122,13 @@
     .sticky-actions { position: sticky; bottom: 0; background: #fff; padding: 10px 0; border-top: 2px solid #000; display: flex; gap: 10px; z-index: 100; }
     .sticky-actions button { flex: 1; }
 
+    .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 15px; }
+    .summary-card { border: 2px solid #000; padding: 10px; text-align: center; }
+    .summary-card span { display: block; font-size: 0.65rem; text-transform: uppercase; margin-bottom: 4px; }
+    .summary-card strong { font-size: 1.2rem; }
+    .summary-card.total-debt { background: #f0f0f0; }
+    .summary-card.total-min { background: #000; color: #fff; }
+
     .toast {
       position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
       background: #000; color: #fff; padding: 10px 20px; font-size: 0.8rem; font-family: sans-serif; text-transform: uppercase;
@@ -157,6 +164,8 @@
       .bar-fill { background: #fff; }
       .bar-fill.min { background: repeating-linear-gradient(45deg, #fff, #fff 2px, #000 2px, #000 4px); }
       .item-row { border-bottom-color: #fff; }
+      .summary-card { border-color: #fff; }
+      .summary-card.total-debt { background: #1a1a1a; color: #fff; }
       .fixed-category { border-top-color: #fff; }
       .checkbox-row span { border-color: #fff; }
       .checkbox-row input:checked + span { background: #fff; color: #000; }
@@ -202,6 +211,7 @@
 
   <div class="section">
     <h2>Actual Payments</h2>
+    <div id="summaryContainer" class="summary-cards"></div>
     <div class="actual-grid">
       <div id="chartsContainer"></div>
       <div>
@@ -231,39 +241,7 @@
         </div>
         <label>Day of month</label>
         <input type="hidden" id="newCardDay" value="1" />
-        <div class="day-grid" id="newCardDayGrid">
-          <button type="button" class="day-btn active" onclick="setDay('newCardDay', 1)">1</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 2)">2</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 3)">3</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 4)">4</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 5)">5</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 6)">6</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 7)">7</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 8)">8</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 9)">9</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 10)">10</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 11)">11</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 12)">12</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 13)">13</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 14)">14</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 15)">15</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 16)">16</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 17)">17</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 18)">18</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 19)">19</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 20)">20</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 21)">21</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 22)">22</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 23)">23</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 24)">24</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 25)">25</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 26)">26</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 27)">27</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 28)">28</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 29)">29</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 30)">30</button>
-          <button type="button" class="day-btn" onclick="setDay('newCardDay', 31)">31</button>
-        </div>
+        <div class="day-grid" id="newCardDayGrid"></div>
         <label>Charge month</label>
         <input type="hidden" id="newCardCycle" value="this" />
         <div class="btn-group">
@@ -316,39 +294,7 @@
         </div>
         <label>Day of month</label>
         <input type="hidden" id="fixDay" value="1" />
-        <div class="day-grid" id="fixDayGrid">
-          <button type="button" class="day-btn active" onclick="setDay('fixDay', 1)">1</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 2)">2</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 3)">3</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 4)">4</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 5)">5</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 6)">6</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 7)">7</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 8)">8</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 9)">9</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 10)">10</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 11)">11</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 12)">12</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 13)">13</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 14)">14</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 15)">15</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 16)">16</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 17)">17</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 18)">18</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 19)">19</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 20)">20</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 21)">21</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 22)">22</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 23)">23</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 24)">24</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 25)">25</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 26)">26</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 27)">27</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 28)">28</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 29)">29</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 30)">30</button>
-          <button type="button" class="day-btn" onclick="setDay('fixDay', 31)">31</button>
-        </div>
+        <div class="day-grid" id="fixDayGrid"></div>
         <div class="grid loan-fields hidden" data-loan-only>
           <div>
             <label>Loan start</label>
@@ -367,6 +313,7 @@
   <div class="sticky-actions">
     <button class="alt" id="editToggle">✎ Edit</button>
     <button class="alt" id="refreshBtn">↺ Refresh</button>
+    <button class="alt" id="exportBtn">↓ Export</button>
   </div>
 
   <div id="toast" class="toast"></div>
@@ -389,6 +336,7 @@ const dom = {
   yearSelect: document.getElementById("yearSelect"),
   monthSelect: document.getElementById("monthSelect"),
   monthGrid: document.getElementById("monthGrid"),
+  summaryContainer: document.getElementById("summaryContainer"),
   chartsContainer: document.getElementById("chartsContainer"),
   calendarContainer: document.getElementById("calendarContainer"),
   calendarInfo: document.getElementById("calendarInfo"),
@@ -415,6 +363,7 @@ const dom = {
   addFixBtn: document.getElementById("addFixBtn"),
   editToggle: document.getElementById("editToggle"),
   refreshBtn: document.getElementById("refreshBtn"),
+  exportBtn: document.getElementById("exportBtn"),
   toast: document.getElementById("toast")
 };
 
@@ -627,6 +576,15 @@ function addCategory(label) {
   updateLoanTermVisibility();
   queueAutosave();
   renderFixed();
+}
+
+function generateDayGrid(containerId, hiddenInputId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = Array.from({ length: 31 }, (_, i) => i + 1).map(i => {
+    const active = i === 1 ? 'active' : '';
+    return `<button type="button" class="day-btn ${active}" onclick="setDay('${hiddenInputId}', ${i})">${i}</button>`;
+  }).join('');
 }
 
 function setDay(targetId, value) {
@@ -961,6 +919,7 @@ function renderCharts() {
   const paymentCards = cards;
 
   const out = [];
+  const summaryOut = [];
   CURRENCIES.forEach((cur) => {
     let totalDeudaT = 0;
     let totalMinT = 0;
@@ -984,8 +943,15 @@ function renderCharts() {
         `<div class="bar-bg"><div class="bar-fill min" style="width:${pagoPct}%"></div></div>` +
       `</div>`
     );
+    summaryOut.push(
+      `<div class="summary-card total-min">
+        <span>Total ${cur} Payment</span>
+        <strong>${sumaPago.toFixed(2)}</strong>
+      </div>`
+    );
   });
   dom.chartsContainer.innerHTML = out.join("");
+  dom.summaryContainer.innerHTML = summaryOut.join("");
   renderCalendar();
 }
 
@@ -1348,6 +1314,28 @@ dom.refreshBtn.addEventListener("click", () => {
   window.location.reload();
 });
 
+dom.exportBtn.addEventListener("click", () => {
+  const data = {
+    export_date: new Date().toISOString(),
+    year: dom.yearSelect.value,
+    month: dom.monthSelect.value,
+    cards,
+    fixedExpenses: fixedGasto,
+    categories,
+    monthlyData: monthCardData
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `inkflow_export_${dom.yearSelect.value}_${dom.monthSelect.value}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("Data exported successfully!");
+});
+
 window.updateFix = (i, fld, val) => {
   if (fld === 'startDate' || fld === 'endDate') {
     val = normalizeFullDate(val);
@@ -1435,6 +1423,8 @@ const now = new Date();
 for (let y = now.getFullYear(); y <= now.getFullYear() + 5; y++) {
   dom.yearSelect.add(new Option(y, y, y === now.getFullYear()));
 }
+generateDayGrid("newCardDayGrid", "newCardDay");
+generateDayGrid("fixDayGrid", "fixDay");
 dom.monthSelect.value = String(now.getMonth()+1).padStart(2,'0');
 renderMonthButtons();
 updateMonthButtons();
@@ -1455,6 +1445,11 @@ window.onDateChange = async () => {
 };
 dom.yearSelect.addEventListener("change", window.onDateChange);
 dom.monthSelect.addEventListener("change", window.onDateChange);
+document.addEventListener("keydown", (e) => {
+  if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
+  if (e.key === "ArrowLeft") shiftMonth(-1);
+  if (e.key === "ArrowRight") shiftMonth(1);
+});
 window.onDateChange();
 </script>
 </body>
