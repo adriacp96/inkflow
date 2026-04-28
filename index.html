@@ -122,6 +122,18 @@
     .sticky-actions { position: sticky; bottom: 0; background: #fff; padding: 10px 0; border-top: 2px solid #000; display: flex; gap: 10px; z-index: 100; }
     .sticky-actions button { flex: 1; }
 
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: #000; color: #fff; padding: 10px 20px; font-size: 0.8rem; font-family: sans-serif; text-transform: uppercase;
+      border: 2px solid #fff; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; z-index: 9999;
+    }
+    .toast.show { opacity: 1; visibility: visible; }
+    .toast.error { background: #d32f2f; border-color: #ffcdd2; }
+    @media (prefers-color-scheme: dark) {
+      .toast { background: #fff; color: #000; border-color: #000; }
+      .toast.error { background: #d32f2f; color: #fff; border-color: #000; }
+    }
     @media (prefers-color-scheme: dark) {
       body { background: #000; color: #fff; }
       h1, h2 { border-bottom-color: #fff; }
@@ -357,6 +369,8 @@
     <button class="alt" id="refreshBtn">↺ Refresh</button>
   </div>
 
+  <div id="toast" class="toast"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // The structure starts empty so you can enter your data
@@ -400,7 +414,8 @@ const dom = {
   fixEndDate: document.getElementById("fixEndDate"),
   addFixBtn: document.getElementById("addFixBtn"),
   editToggle: document.getElementById("editToggle"),
-  refreshBtn: document.getElementById("refreshBtn")
+  refreshBtn: document.getElementById("refreshBtn"),
+  toast: document.getElementById("toast")
 };
 
 function updateLoanTermVisibility() {
@@ -536,6 +551,17 @@ const isSupabaseConfigured = () => (
   SUPABASE_ANON_KEY !== "YOUR_ANON_KEY" &&
   !!supabaseClient
 );
+
+let toastTimeout;
+function showToast(message, isError = false) {
+  if (!dom.toast) return;
+  dom.toast.textContent = message;
+  dom.toast.className = "toast show" + (isError ? " error" : "");
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    dom.toast.className = "toast";
+  }, 3000);
+}
 
 function toggleFreqOptions() {
   const isChecked = dom.checkFreq.checked;
@@ -807,6 +833,7 @@ async function loadFromSupabase() {
     .maybeSingle();
   if (monthError) {
     console.error("Supabase load error:", monthError);
+    showToast("Failed to load month data", true);
     return;
   }
   const monthCards = monthData && Array.isArray(monthData.cards) ? monthData.cards : [];
@@ -820,6 +847,7 @@ async function loadFromSupabase() {
     .maybeSingle();
   if (prevError) {
     console.error("Supabase prev cards load error:", prevError);
+    showToast("Failed to load previous cards", true);
     return;
   }
   prevCards = prevData && Array.isArray(prevData.cards) ? prevData.cards : [];
@@ -835,6 +863,7 @@ async function loadFromSupabase() {
     .maybeSingle();
   if (fixedError) {
     console.error("Supabase fixed load error:", fixedError);
+    showToast("Failed to load fixed expenses", true);
     return;
   }
   fixedGasto = fixedData && Array.isArray(fixedData.fixed)
@@ -870,7 +899,7 @@ async function loadFromSupabase() {
 
 async function saveToSupabase(showAlert = false) {
   if (!isSupabaseConfigured()) {
-    if (showAlert) alert("Set SUPABASE_URL and SUPABASE_ANON_KEY first.");
+    if (showAlert) showToast("Set SUPABASE credentials first.", true);
     return;
   }
   const { year, month } = getSelectedYearMonth();
@@ -889,7 +918,7 @@ async function saveToSupabase(showAlert = false) {
     .upsert(payload, { onConflict: 'year,month' });
   if (error) {
     console.error("Supabase save error:", error);
-    if (showAlert) alert("Cloud save error. Check the console.");
+    if (showAlert) showToast("Cloud save error", true);
     return;
   }
   const globalKey = getGlobalFixedKey();
@@ -906,10 +935,10 @@ async function saveToSupabase(showAlert = false) {
     .upsert(fixedPayload, { onConflict: 'year,month' });
   if (fixedError) {
     console.error("Supabase fixed save error:", fixedError);
-    if (showAlert) alert("Cloud save error. Check the console.");
+    if (showAlert) showToast("Cloud save error (Fixed)", true);
     return;
   }
-  if (showAlert) alert("Saved to cloud.");
+  if (showAlert) showToast("Saved to cloud.");
 }
 
 let autosaveTimer = null;
@@ -1380,17 +1409,17 @@ dom.addFixBtn.addEventListener("click", () => {
   if (!dom.fixCat.value) {
     dom.fixCat.value = categories[0] ? categories[0].key : "subscriptions";
   }
-    fixedGasto.push({
-      name,
-      amount: amt,
-      currency: dom.fixCur.value,
-      category: dom.fixCat.value,
-      day: parseInt(dom.fixDay.value, 10) || 1,
-      startDate: normalizeFullDate(dom.fixStartDate.value),
-      endDate: normalizeFullDate(dom.fixEndDate.value),
-      freq: hasNonMonthly ? parseInt(dom.fixFreq.value, 10) : 1,
-      dueMonth: hasNonMonthly ? dom.fixMonth.value : "all"
-    });
+  fixedGasto.push({
+    name,
+    amount: amt,
+    currency: dom.fixCur.value,
+    category: dom.fixCat.value,
+    day: parseInt(dom.fixDay.value, 10) || 1,
+    startDate: normalizeFullDate(dom.fixStartDate.value),
+    endDate: normalizeFullDate(dom.fixEndDate.value),
+    freq: hasNonMonthly ? parseInt(dom.fixFreq.value, 10) : 1,
+    dueMonth: hasNonMonthly ? dom.fixMonth.value : "all"
+  });
   dom.fixName.value = "";
   dom.fixAmt.value = "";
   dom.newCatName.value = "";
